@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="QuickPay.BLL/QuickPay.BLL.csproj" />
+  <Project Path="QuickPay.DAL/QuickPay.DAL.csproj" />
+  <Project Path="QuickPay.PL/QuickPay.PL.csproj" />
+</Solution>
