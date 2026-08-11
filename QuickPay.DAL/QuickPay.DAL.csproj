@@ -19,10 +19,4 @@
     </PackageReference>
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Entities\" />
-    <Folder Include="Repositries\Interfaces\" />
-    <Folder Include="Repositries\Implementaion\" />
-  </ItemGroup>
-
 </Project>
