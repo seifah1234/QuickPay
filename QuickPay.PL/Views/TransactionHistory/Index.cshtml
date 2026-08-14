@@ -1,0 +1,69 @@
+﻿@using QuickPay.BLL.DTOs
+@model List<TransactionHistoryDto>
+
+@{
+    ViewData["Title"] = "Transaction History";
+    var userId = ViewBag.UserId;
+}
+
+<h2 class="mb-4">Transaction History</h2>
+
+<div class="card">
+    <div class="card-body p-0">
+
+        @if (Model == null || !Model.Any())
+        {
+            <div class="text-center text-muted py-5">
+                <div class="fs-1 mb-2">🧾</div>
+                <p class="mb-0 fw-semibold">No transactions yet</p>
+                <p class="small">Activity for this user will show up here once it happens.</p>
+            </div>
+        }
+        else
+        {
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Type</th>
+                        <th class="text-end">Amount</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in Model)
+                    {
+                        var typeLower = t.Type.ToLower();
+                        var isDeposit = typeLower == "deposit";
+                        var icon = isDeposit ? "⬇️" : (typeLower == "withdraw" ? "⬆️" : "🔁");
+
+                        var statusLower = t.Status.ToLower();
+                        var badgeClass = statusLower switch
+                        {
+                            "success" => "bg-success",
+                            "pending" => "bg-warning text-dark",
+                            "failed" => "bg-danger",
+                            _ => "bg-secondary"
+                        };
+
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fs-5">@icon</span>
+                                    <div class="fw-semibold">@t.Type</div>
+                                </div>
+                            </td>
+                            <td class="text-end fw-bold @(isDeposit ? "text-success" : "text-danger")">
+                                @(isDeposit ? "+" : "−")@t.Amount.ToString("N2")
+                            </td>
+                            <td><span class="badge @badgeClass">@t.Status</span></td>
+                            <td class="text-muted small text-nowrap">@t.CreatedAt.ToString("MMM d, yyyy · h:mm tt")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+    </div>
+</div>
+

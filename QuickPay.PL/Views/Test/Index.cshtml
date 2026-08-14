@@ -1,0 +1,81 @@
+﻿@{
+    ViewData["Title"] = "Test - Notifications";
+}
+
+<h2 class="mb-4">🧪 Test Page (Dev Only)</h2>
+<p class="text-muted">This page is for testing the Notifications backend directly. Not part of the real app UI.</p>
+
+<div class="row">
+    <div class="col-md-6">
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Send Notification</h5>
+                <form method="post" action="/Test/Send">
+                    <div class="mb-3">
+                        <label class="form-label">User Id</label>
+                        <input type="number" name="userId" value="1" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Type</label>
+                        <input type="text" name="type" value="Test" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Message</label>
+                        <input type="text" name="message" value="First test message" class="form-control" />
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Send (redirects to /Notifications)</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    🔴 Live (Realtime)
+                    <span id="connectionStatus" class="badge bg-secondary float-end">Connecting...</span>
+                </h5>
+                <ul id="liveList" class="list-group list-group-flush mt-2"></ul>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Quick Links</h5>
+                <p>Sending redirects to the real Notifications page, where you can see history and Mark as Read.</p>
+                <a href="/Notifications?userId=1" class="btn btn-outline-secondary w-100 mb-2">View /Notifications?userId=1</a>
+                <a href="/TransactionHistory?userId=1" class="btn btn-outline-secondary w-100">View /TransactionHistory?userId=1</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/microsoft/signalr/dist/browser/signalr.min.js"></script>
+<script>
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/hubs/notifications")
+        .build();
+
+    connection.on("ReceiveNotification", (data) => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item text-danger';
+        li.textContent = `[${data.type}] ${data.message}`;
+        document.getElementById('liveList').prepend(li);
+    });
+
+    const statusBadge = document.getElementById('connectionStatus');
+
+    connection.start()
+        .then(() => {
+            statusBadge.textContent = 'Connected';
+            statusBadge.className = 'badge bg-success float-end';
+        })
+        .catch(err => {
+            statusBadge.textContent = 'Failed';
+            statusBadge.className = 'badge bg-danger float-end';
+            console.error(err);
+        });
+</script>

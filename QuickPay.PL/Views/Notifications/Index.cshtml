@@ -1,0 +1,75 @@
+﻿@using QuickPay.BLL.DTOs
+@model List<NotificationDto>
+
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+<h2 class="mb-4">
+    Notifications
+
+</h2>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Your Notifications</h5>
+
+        <table class="table table-striped table-hover align-middle" id="notificationsTable">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Message</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="notificationsBody">
+                @if (Model != null)
+                {
+                    @foreach (var n in Model)
+                    {
+                        <tr>
+                            <td><span class="badge bg-info text-dark">@n.Type</span></td>
+                            <td>@n.Message</td>
+                            <td>
+                                @if (n.IsRead)
+                                {
+                                    <span class="badge bg-success">Read</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark">Unread</span>
+                                }
+                            </td>
+                            <td class="text-nowrap">@n.CreatedAt.ToString("g")</td>
+                            <td>
+                                @if (!n.IsRead)
+                                {
+                                    <form method="post" asp-action="MarkAsRead" class="d-inline">
+                                        <input type="hidden" name="id" value="@n.Id" />
+                                        <input type="hidden" name="userId" value="@ViewBag.UserId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary">Mark as Read</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+
+        <p id="emptyMessage" class="text-muted" style="@(Model != null && Model.Any() ? "display:none" : "")">
+            No notifications yet.
+        </p>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+

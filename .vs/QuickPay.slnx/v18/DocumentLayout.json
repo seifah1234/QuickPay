@@ -1,0 +1,572 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\DELL\\source\\repos\\QuickPay\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{F54C3DD1-1AB9-5356-1E6D-B2BD8D2BD1BB}|QuickPay.BLL\\QuickPay.BLL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.bll\\dtos\\notificationdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F54C3DD1-1AB9-5356-1E6D-B2BD8D2BD1BB}|QuickPay.BLL\\QuickPay.BLL.csproj|solutionrelative:quickpay.bll\\dtos\\notificationdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F54C3DD1-1AB9-5356-1E6D-B2BD8D2BD1BB}|QuickPay.BLL\\QuickPay.BLL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.bll\\dtos\\transactionhistorydto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F54C3DD1-1AB9-5356-1E6D-B2BD8D2BD1BB}|QuickPay.BLL\\QuickPay.BLL.csproj|solutionrelative:quickpay.bll\\dtos\\transactionhistorydto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F54C3DD1-1AB9-5356-1E6D-B2BD8D2BD1BB}|QuickPay.BLL\\QuickPay.BLL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.bll\\services\\abstraction\\inotificationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F54C3DD1-1AB9-5356-1E6D-B2BD8D2BD1BB}|QuickPay.BLL\\QuickPay.BLL.csproj|solutionrelative:quickpay.bll\\services\\abstraction\\inotificationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F54C3DD1-1AB9-5356-1E6D-B2BD8D2BD1BB}|QuickPay.BLL\\QuickPay.BLL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.bll\\services\\abstraction\\irealtimenotifier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F54C3DD1-1AB9-5356-1E6D-B2BD8D2BD1BB}|QuickPay.BLL\\QuickPay.BLL.csproj|solutionrelative:quickpay.bll\\services\\abstraction\\irealtimenotifier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F54C3DD1-1AB9-5356-1E6D-B2BD8D2BD1BB}|QuickPay.BLL\\QuickPay.BLL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.bll\\services\\abstraction\\itransactionhistoryservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F54C3DD1-1AB9-5356-1E6D-B2BD8D2BD1BB}|QuickPay.BLL\\QuickPay.BLL.csproj|solutionrelative:quickpay.bll\\services\\abstraction\\itransactionhistoryservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F54C3DD1-1AB9-5356-1E6D-B2BD8D2BD1BB}|QuickPay.BLL\\QuickPay.BLL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.bll\\services\\implementation\\notificationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F54C3DD1-1AB9-5356-1E6D-B2BD8D2BD1BB}|QuickPay.BLL\\QuickPay.BLL.csproj|solutionrelative:quickpay.bll\\services\\implementation\\notificationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F54C3DD1-1AB9-5356-1E6D-B2BD8D2BD1BB}|QuickPay.BLL\\QuickPay.BLL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.bll\\services\\implementation\\transactionhistoryservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F54C3DD1-1AB9-5356-1E6D-B2BD8D2BD1BB}|QuickPay.BLL\\QuickPay.BLL.csproj|solutionrelative:quickpay.bll\\services\\implementation\\transactionhistoryservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.dal\\database\\projectdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|solutionrelative:quickpay.dal\\database\\projectdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.dal\\entity\\notification.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|solutionrelative:quickpay.dal\\entity\\notification.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.dal\\entity\\transaction.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|solutionrelative:quickpay.dal\\entity\\transaction.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.dal\\entity\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|solutionrelative:quickpay.dal\\entity\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.dal\\repo\\abstraction\\inotificationrepo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|solutionrelative:quickpay.dal\\repo\\abstraction\\inotificationrepo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.dal\\repo\\abstraction\\itransactionhistoryrepo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|solutionrelative:quickpay.dal\\repo\\abstraction\\itransactionhistoryrepo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.dal\\repo\\implementation\\notificationrepo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|solutionrelative:quickpay.dal\\repo\\implementation\\notificationrepo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.dal\\repo\\implementation\\transactionhistoryrepo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|solutionrelative:quickpay.dal\\repo\\implementation\\transactionhistoryrepo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.pl\\controllers\\notificationscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|solutionrelative:quickpay.pl\\controllers\\notificationscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.pl\\controllers\\testcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|solutionrelative:quickpay.pl\\controllers\\testcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.pl\\controllers\\transactionhistorycontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|solutionrelative:quickpay.pl\\controllers\\transactionhistorycontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.pl\\hubs\\notificationhub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|solutionrelative:quickpay.pl\\hubs\\notificationhub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.pl\\hubs\\signalrnotifier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|solutionrelative:quickpay.pl\\hubs\\signalrnotifier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.pl\\views\\notifications\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|solutionrelative:quickpay.pl\\views\\notifications\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.pl\\views\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|solutionrelative:quickpay.pl\\views\\shared\\_layout.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.pl\\views\\test\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|solutionrelative:quickpay.pl\\views\\test\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.pl\\views\\transactionhistory\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|solutionrelative:quickpay.pl\\views\\transactionhistory\\index.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.pl\\libman.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|solutionrelative:quickpay.pl\\libman.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.pl\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|solutionrelative:quickpay.pl\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.pl\\quickpay.pl.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|solutionrelative:quickpay.pl\\quickpay.pl.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.dal\\migrations\\20260814152724_init.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|solutionrelative:quickpay.dal\\migrations\\20260814152724_init.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.pl\\views\\shared\\error.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|solutionrelative:quickpay.pl\\views\\shared\\error.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.pl\\views\\_viewimports.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|solutionrelative:quickpay.pl\\views\\_viewimports.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.pl\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{8722F20B-0AA8-D900-EDCE-5B289697A056}|QuickPay.PL\\QuickPay.PL.csproj|solutionrelative:quickpay.pl\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F54C3DD1-1AB9-5356-1E6D-B2BD8D2BD1BB}|QuickPay.BLL\\QuickPay.BLL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.bll\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F54C3DD1-1AB9-5356-1E6D-B2BD8D2BD1BB}|QuickPay.BLL\\QuickPay.BLL.csproj|solutionrelative:quickpay.bll\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|c:\\users\\dell\\source\\repos\\quickpay\\quickpay.dal\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FA608F2B-B30F-9EC4-D66C-2F59AB1A3A7F}|QuickPay.DAL\\QuickPay.DAL.csproj|solutionrelative:quickpay.dal\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 3,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "IRealtimeNotifier.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.BLL\\Services\\Abstraction\\IRealtimeNotifier.cs",
+              "RelativeDocumentMoniker": "QuickPay.BLL\\Services\\Abstraction\\IRealtimeNotifier.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.BLL\\Services\\Abstraction\\IRealtimeNotifier.cs",
+              "RelativeToolTip": "QuickPay.BLL\\Services\\Abstraction\\IRealtimeNotifier.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:05:29.89Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "INotificationService.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.BLL\\Services\\Abstraction\\INotificationService.cs",
+              "RelativeDocumentMoniker": "QuickPay.BLL\\Services\\Abstraction\\INotificationService.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.BLL\\Services\\Abstraction\\INotificationService.cs",
+              "RelativeToolTip": "QuickPay.BLL\\Services\\Abstraction\\INotificationService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:05:10.314Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "TransactionHistoryDto.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.BLL\\DTOs\\TransactionHistoryDto.cs",
+              "RelativeDocumentMoniker": "QuickPay.BLL\\DTOs\\TransactionHistoryDto.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.BLL\\DTOs\\TransactionHistoryDto.cs",
+              "RelativeToolTip": "QuickPay.BLL\\DTOs\\TransactionHistoryDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:04:17.737Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "NotificationDto.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.BLL\\DTOs\\NotificationDto.cs",
+              "RelativeDocumentMoniker": "QuickPay.BLL\\DTOs\\NotificationDto.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.BLL\\DTOs\\NotificationDto.cs",
+              "RelativeToolTip": "QuickPay.BLL\\DTOs\\NotificationDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAoAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:03:39.033Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "ITransactionHistoryService.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.BLL\\Services\\Abstraction\\ITransactionHistoryService.cs",
+              "RelativeDocumentMoniker": "QuickPay.BLL\\Services\\Abstraction\\ITransactionHistoryService.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.BLL\\Services\\Abstraction\\ITransactionHistoryService.cs",
+              "RelativeToolTip": "QuickPay.BLL\\Services\\Abstraction\\ITransactionHistoryService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:05:43.446Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "NotificationService.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.BLL\\Services\\Implementation\\NotificationService.cs",
+              "RelativeDocumentMoniker": "QuickPay.BLL\\Services\\Implementation\\NotificationService.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.BLL\\Services\\Implementation\\NotificationService.cs",
+              "RelativeToolTip": "QuickPay.BLL\\Services\\Implementation\\NotificationService.cs",
+              "ViewState": "AgIAACIAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:06:27.852Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "TransactionHistoryService.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.BLL\\Services\\Implementation\\TransactionHistoryService.cs",
+              "RelativeDocumentMoniker": "QuickPay.BLL\\Services\\Implementation\\TransactionHistoryService.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.BLL\\Services\\Implementation\\TransactionHistoryService.cs",
+              "RelativeToolTip": "QuickPay.BLL\\Services\\Implementation\\TransactionHistoryService.cs",
+              "ViewState": "AgIAABUAAAAAAAAAAAAAAAUAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:06:45.604Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "ProjectDBContext.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Database\\ProjectDBContext.cs",
+              "RelativeDocumentMoniker": "QuickPay.DAL\\Database\\ProjectDBContext.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Database\\ProjectDBContext.cs",
+              "RelativeToolTip": "QuickPay.DAL\\Database\\ProjectDBContext.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:07:48.682Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "Notification.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Entity\\Notification.cs",
+              "RelativeDocumentMoniker": "QuickPay.DAL\\Entity\\Notification.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Entity\\Notification.cs",
+              "RelativeToolTip": "QuickPay.DAL\\Entity\\Notification.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:08:03.735Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "Transaction.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Entity\\Transaction.cs",
+              "RelativeDocumentMoniker": "QuickPay.DAL\\Entity\\Transaction.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Entity\\Transaction.cs",
+              "RelativeToolTip": "QuickPay.DAL\\Entity\\Transaction.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:08:29.885Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "User.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Entity\\User.cs",
+              "RelativeDocumentMoniker": "QuickPay.DAL\\Entity\\User.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Entity\\User.cs",
+              "RelativeToolTip": "QuickPay.DAL\\Entity\\User.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:08:49.856Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "INotificationRepo.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Repo\\Abstraction\\INotificationRepo.cs",
+              "RelativeDocumentMoniker": "QuickPay.DAL\\Repo\\Abstraction\\INotificationRepo.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Repo\\Abstraction\\INotificationRepo.cs",
+              "RelativeToolTip": "QuickPay.DAL\\Repo\\Abstraction\\INotificationRepo.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAA+AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:09:20.51Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "ITransactionHistoryRepo.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Repo\\Abstraction\\ITransactionHistoryRepo.cs",
+              "RelativeDocumentMoniker": "QuickPay.DAL\\Repo\\Abstraction\\ITransactionHistoryRepo.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Repo\\Abstraction\\ITransactionHistoryRepo.cs",
+              "RelativeToolTip": "QuickPay.DAL\\Repo\\Abstraction\\ITransactionHistoryRepo.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:09:35.754Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "NotificationRepo.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Repo\\Implementation\\NotificationRepo.cs",
+              "RelativeDocumentMoniker": "QuickPay.DAL\\Repo\\Implementation\\NotificationRepo.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Repo\\Implementation\\NotificationRepo.cs",
+              "RelativeToolTip": "QuickPay.DAL\\Repo\\Implementation\\NotificationRepo.cs",
+              "ViewState": "AgIAACUAAAAAAAAAAAAAAA4AAAA5AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:10:05.537Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "TransactionHistoryRepo.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Repo\\Implementation\\TransactionHistoryRepo.cs",
+              "RelativeDocumentMoniker": "QuickPay.DAL\\Repo\\Implementation\\TransactionHistoryRepo.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Repo\\Implementation\\TransactionHistoryRepo.cs",
+              "RelativeToolTip": "QuickPay.DAL\\Repo\\Implementation\\TransactionHistoryRepo.cs",
+              "ViewState": "AgIAABAAAAAAAAAAAAAAAAoAAAA/AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:10:21.587Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "NotificationsController.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Controllers\\NotificationsController.cs",
+              "RelativeDocumentMoniker": "QuickPay.PL\\Controllers\\NotificationsController.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Controllers\\NotificationsController.cs",
+              "RelativeToolTip": "QuickPay.PL\\Controllers\\NotificationsController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAHAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:10:54.953Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "TestController.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Controllers\\TestController.cs",
+              "RelativeDocumentMoniker": "QuickPay.PL\\Controllers\\TestController.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Controllers\\TestController.cs",
+              "RelativeToolTip": "QuickPay.PL\\Controllers\\TestController.cs",
+              "ViewState": "AgIAAAEAAAAAAAAAAAAAABkAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:11:31.568Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "TransactionHistoryController.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Controllers\\TransactionHistoryController.cs",
+              "RelativeDocumentMoniker": "QuickPay.PL\\Controllers\\TransactionHistoryController.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Controllers\\TransactionHistoryController.cs",
+              "RelativeToolTip": "QuickPay.PL\\Controllers\\TransactionHistoryController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:12:00.123Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "NotificationHub.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Hubs\\NotificationHub.cs",
+              "RelativeDocumentMoniker": "QuickPay.PL\\Hubs\\NotificationHub.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Hubs\\NotificationHub.cs",
+              "RelativeToolTip": "QuickPay.PL\\Hubs\\NotificationHub.cs",
+              "ViewState": "AgIAAAUAAAAAAAAAAAAAAAcAAAAHAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:15:59.76Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "SignalRNotifier.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Hubs\\SignalRNotifier.cs",
+              "RelativeDocumentMoniker": "QuickPay.PL\\Hubs\\SignalRNotifier.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Hubs\\SignalRNotifier.cs",
+              "RelativeToolTip": "QuickPay.PL\\Hubs\\SignalRNotifier.cs",
+              "ViewState": "AgIAAAEAAAAAAAAAAAAAAAYAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:16:12.023Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "Index.cshtml",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Views\\Notifications\\Index.cshtml",
+              "RelativeDocumentMoniker": "QuickPay.PL\\Views\\Notifications\\Index.cshtml",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Views\\Notifications\\Index.cshtml",
+              "RelativeToolTip": "QuickPay.PL\\Views\\Notifications\\Index.cshtml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAADUAAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-08-14T15:24:55.371Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "_Layout.cshtml",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Views\\Shared\\_Layout.cshtml",
+              "RelativeDocumentMoniker": "QuickPay.PL\\Views\\Shared\\_Layout.cshtml",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Views\\Shared\\_Layout.cshtml",
+              "RelativeToolTip": "QuickPay.PL\\Views\\Shared\\_Layout.cshtml",
+              "ViewState": "AgIAAF4AAAAAAAAAAAAAAGEAAABCAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-08-14T15:41:55.138Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 22,
+              "Title": "Index.cshtml",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Views\\Test\\Index.cshtml",
+              "RelativeDocumentMoniker": "QuickPay.PL\\Views\\Test\\Index.cshtml",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Views\\Test\\Index.cshtml",
+              "RelativeToolTip": "QuickPay.PL\\Views\\Test\\Index.cshtml",
+              "ViewState": "AgIAACUAAAAAAAAAAAAAAFEAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-08-14T15:36:17.917Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 23,
+              "Title": "Index.cshtml",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Views\\TransactionHistory\\Index.cshtml",
+              "RelativeDocumentMoniker": "QuickPay.PL\\Views\\TransactionHistory\\Index.cshtml",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Views\\TransactionHistory\\Index.cshtml",
+              "RelativeToolTip": "QuickPay.PL\\Views\\TransactionHistory\\Index.cshtml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAEUAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-08-14T15:25:34.137Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 25,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Program.cs",
+              "RelativeDocumentMoniker": "QuickPay.PL\\Program.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Program.cs",
+              "RelativeToolTip": "QuickPay.PL\\Program.cs",
+              "ViewState": "AgIAACkAAAAAAAAAAAAAAC8AAAA/AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:18:15.414Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 24,
+              "Title": "libman.json",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\libman.json",
+              "RelativeDocumentMoniker": "QuickPay.PL\\libman.json",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\libman.json",
+              "RelativeToolTip": "QuickPay.PL\\libman.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-08-14T15:49:02.409Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 26,
+              "Title": "QuickPay.PL.csproj",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\QuickPay.PL.csproj",
+              "RelativeDocumentMoniker": "QuickPay.PL\\QuickPay.PL.csproj",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\QuickPay.PL.csproj",
+              "RelativeToolTip": "QuickPay.PL\\QuickPay.PL.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-08-14T15:48:08.499Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 27,
+              "Title": "20260814152724_init.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Migrations\\20260814152724_init.cs",
+              "RelativeDocumentMoniker": "QuickPay.DAL\\Migrations\\20260814152724_init.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Migrations\\20260814152724_init.cs",
+              "RelativeToolTip": "QuickPay.DAL\\Migrations\\20260814152724_init.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:27:24.753Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 28,
+              "Title": "Error.cshtml",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Views\\Shared\\Error.cshtml",
+              "RelativeDocumentMoniker": "QuickPay.PL\\Views\\Shared\\Error.cshtml",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Views\\Shared\\Error.cshtml",
+              "RelativeToolTip": "QuickPay.PL\\Views\\Shared\\Error.cshtml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAEAAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-08-14T15:25:22.962Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 29,
+              "Title": "_ViewImports.cshtml",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Views\\_ViewImports.cshtml",
+              "RelativeDocumentMoniker": "QuickPay.PL\\Views\\_ViewImports.cshtml",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\Views\\_ViewImports.cshtml",
+              "RelativeToolTip": "QuickPay.PL\\Views\\_ViewImports.cshtml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAEAAAAPAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-08-14T15:25:44.146Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 30,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\appsettings.json",
+              "RelativeDocumentMoniker": "QuickPay.PL\\appsettings.json",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.PL\\appsettings.json",
+              "RelativeToolTip": "QuickPay.PL\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAABJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-08-14T15:19:28.705Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 31,
+              "Title": "Class1.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.BLL\\Class1.cs",
+              "RelativeDocumentMoniker": "QuickPay.BLL\\Class1.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.BLL\\Class1.cs",
+              "RelativeToolTip": "QuickPay.BLL\\Class1.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:00:18.785Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 32,
+              "Title": "Class1.cs",
+              "DocumentMoniker": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Class1.cs",
+              "RelativeDocumentMoniker": "QuickPay.DAL\\Class1.cs",
+              "ToolTip": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\Class1.cs",
+              "RelativeToolTip": "QuickPay.DAL\\Class1.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-14T15:00:35.449Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

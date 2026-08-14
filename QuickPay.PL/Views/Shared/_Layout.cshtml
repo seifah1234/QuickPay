@@ -1,0 +1,132 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - QuickPay.PL</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/QuickPay.PL.styles.css" asp-append-version="true" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Project2.PL</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2026 - QuickPay.PL - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/microsoft/signalr/dist/browser/signalr.min.js"></script>
+
+
+
+    <style>
+            .center-toast-container {
+                position: fixed;
+                top: 24px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 1080;
+                width: 100%;
+                max-width: 420px;
+                pointer-events: none;
+            }
+
+            #globalNotificationToast {
+                pointer-events: auto;
+                border-radius: 12px;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+                border: none;
+                overflow: hidden;
+            }
+
+                #globalNotificationToast .toast-body {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 14px 16px;
+                    font-size: 0.95rem;
+                }
+
+                #globalNotificationToast .toast-icon {
+                    font-size: 1.4rem;
+                    flex-shrink: 0;
+                }
+    </style>
+
+    <div class="center-toast-container">
+        <div id="globalNotificationToast" class="toast text-bg-primary" role="alert">
+            <div class="toast-body">
+                <span class="toast-icon">🔔</span>
+                <span id="globalToastBody" class="flex-grow-1"></span>
+                <button type="button" class="btn-close btn-close-white flex-shrink-0" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+       
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentUserId = urlParams.get('userId') || '1'; 
+
+            const notificationConnection = new signalR.HubConnectionBuilder()
+                .withUrl(`/hubs/notifications?userId=${currentUserId}`)
+                .build();
+
+            notificationConnection.on("ReceiveNotification", (data) => {
+                document.getElementById('globalToastBody').textContent = `[${data.type}] ${data.message}`;
+                const toastEl = document.getElementById('globalNotificationToast');
+                const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+                toast.show();
+
+                const tbody = document.getElementById('notificationsBody');
+                if (tbody) {
+                    const row = document.createElement('tr');
+                    row.className = 'table-warning';
+                    row.innerHTML = `
+                            <td><span class="badge bg-info text-dark">${data.type}</span></td>
+                            <td>${data.message}</td>
+                            <td><span class="badge bg-warning text-dark">Unread</span></td>
+                            <td>Just now</td>
+                            <td></td>
+                        `;
+                    tbody.prepend(row);
+                    const emptyMsg = document.getElementById('emptyMessage');
+                    if (emptyMsg) emptyMsg.style.display = 'none';
+                }
+            });
+
+            notificationConnection.start().catch(err => console.error('SignalR connection failed:', err));
+    </script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

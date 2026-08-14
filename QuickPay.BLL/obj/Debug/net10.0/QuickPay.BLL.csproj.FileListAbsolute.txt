@@ -1,0 +1,15 @@
+C:\Users\DELL\source\repos\QuickPay\QuickPay.BLL\bin\Debug\net10.0\QuickPay.BLL.deps.json
+C:\Users\DELL\source\repos\QuickPay\QuickPay.BLL\bin\Debug\net10.0\QuickPay.BLL.dll
+C:\Users\DELL\source\repos\QuickPay\QuickPay.BLL\bin\Debug\net10.0\QuickPay.BLL.pdb
+C:\Users\DELL\source\repos\QuickPay\QuickPay.BLL\bin\Debug\net10.0\QuickPay.DAL.dll
+C:\Users\DELL\source\repos\QuickPay\QuickPay.BLL\bin\Debug\net10.0\QuickPay.DAL.pdb
+C:\Users\DELL\source\repos\QuickPay\QuickPay.BLL\obj\Debug\net10.0\QuickPay.BLL.csproj.AssemblyReference.cache
+C:\Users\DELL\source\repos\QuickPay\QuickPay.BLL\obj\Debug\net10.0\QuickPay.BLL.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\DELL\source\repos\QuickPay\QuickPay.BLL\obj\Debug\net10.0\QuickPay.BLL.AssemblyInfoInputs.cache
+C:\Users\DELL\source\repos\QuickPay\QuickPay.BLL\obj\Debug\net10.0\QuickPay.BLL.AssemblyInfo.cs
+C:\Users\DELL\source\repos\QuickPay\QuickPay.BLL\obj\Debug\net10.0\QuickPay.BLL.csproj.CoreCompileInputs.cache
+C:\Users\DELL\source\repos\QuickPay\QuickPay.BLL\obj\Debug\net10.0\QuickPay.14A35C9D.Up2Date
+C:\Users\DELL\source\repos\QuickPay\QuickPay.BLL\obj\Debug\net10.0\QuickPay.BLL.dll
+C:\Users\DELL\source\repos\QuickPay\QuickPay.BLL\obj\Debug\net10.0\refint\QuickPay.BLL.dll
+C:\Users\DELL\source\repos\QuickPay\QuickPay.BLL\obj\Debug\net10.0\QuickPay.BLL.pdb
+C:\Users\DELL\source\repos\QuickPay\QuickPay.BLL\obj\Debug\net10.0\ref\QuickPay.BLL.dll
