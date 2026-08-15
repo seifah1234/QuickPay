@@ -44,7 +44,7 @@
                         @Html.AntiForgeryToken()
 
 
-                        <!-- From Account -->
+                        <!-- From Account: only accounts this user owns / is a member of -->
 
                         <div class="mb-3">
 
@@ -79,30 +79,27 @@
                         </div>
 
 
-                        <!-- To Account -->
+                        <!-- To Account: search by username, phone number, or shared wallet name -->
 
                         <div class="mb-3">
 
-                            <label asp-for="ToAccountId"
+                            <label for="recipientSearch"
                                    class="form-label">
-                                To Account
+                                To (username, phone number, or shared wallet)
                             </label>
 
-                            <select asp-for="ToAccountId"
-                                    class="form-select">
+                            <input type="text"
+                                   id="recipientSearch"
+                                   class="form-control"
+                                   autocomplete="off"
+                                   placeholder="Start typing to search..."
+                                   value="@Model.ToAccountDisplay" />
 
-                                <option value="0">
-                                    Select destination account
-                                </option>
+                            <div id="recipientResults"
+                                 class="list-group mt-1">
+                            </div>
 
-                                @foreach (var account in Model.Accounts)
-                                {
-                                    <option value="@account.Id">
-                                        @account.DisplayName
-                                    </option>
-                                }
-
-                            </select>
+                            <input asp-for="ToAccountId" type="hidden" id="ToAccountIdInput" />
 
                             <span asp-validation-for="ToAccountId"
                                   class="text-danger">
@@ -163,4 +160,5 @@
 @section Scripts
 {
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/transfer-recipient-search.js"></script>
 }

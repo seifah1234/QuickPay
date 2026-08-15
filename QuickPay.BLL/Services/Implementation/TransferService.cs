@@ -1,4 +1,5 @@
-﻿using QuickPay.BLL.DTOs;
+﻿using Microsoft.EntityFrameworkCore;
+using QuickPay.BLL.DTOs;
 using QuickPay.BLL.Services.Interfaces;
 using QuickPay.DAL.Entities;
 using QuickPay.DAL.Enums;
@@ -34,17 +35,34 @@ namespace QuickPay.BLL.Services.Implementation
                     "Source and destination accounts must be different.");
             }
 
+            // Authorization: the caller must actually own (or be a member
+            // of, for shared wallets) the source account. Without this
+            // check, any authenticated user could pass any FromAccountId
+            // and drain someone else's balance.
+            var isAuthorized =
+                await _unitOfWork.FinancialAccounts
+                    .IsUserAuthorizedForAccountAsync(
+                        request.FromAccountId,
+                        request.CurrentUserId,
+                        cancellationToken);
+
+            if (!isAuthorized)
+            {
+                throw new UnauthorizedAccessException(
+                    "You are not authorized to transfer from this account.");
+            }
+
             await _unitOfWork.BeginTransactionAsync(cancellationToken);
 
             try
             {
                 var fromAccount =
                     await _unitOfWork.FinancialAccounts
-                        .GetByIdAsync(request.FromAccountId);
+                        .GetByIdAsync(request.FromAccountId, cancellationToken);
 
                 var toAccount =
                     await _unitOfWork.FinancialAccounts
-                        .GetByIdAsync(request.ToAccountId);
+                        .GetByIdAsync(request.ToAccountId, cancellationToken);
 
                 if (fromAccount is null)
                 {
@@ -91,7 +109,20 @@ namespace QuickPay.BLL.Services.Implementation
 
                 await _unitOfWork.Transactions.AddAsync(transaction);
 
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                try
+                {
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    // Someone else updated fromAccount/toAccount's
+                    // RowVersion between our read and this write - the
+                    // in-memory balances above are stale. Fail the whole
+                    // transfer rather than silently overwriting the
+                    // other update; the caller can safely retry.
+                    throw new InvalidOperationException(
+                        "One of the accounts was updated at the same time by another operation. Please try again.");
+                }
 
                 await _unitOfWork.CommitTransactionAsync(
                     cancellationToken);

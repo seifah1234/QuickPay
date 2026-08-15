@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using QuickPay.DAL;
 
@@ -11,9 +12,11 @@ using QuickPay.DAL;
 namespace QuickPay.DAL.Migrations
 {
     [DbContext(typeof(QuickPayDbContext))]
-    partial class QuickPayDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260815135804_EditFinancialAccounts")]
+    partial class EditFinancialAccounts
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -49,11 +52,6 @@ namespace QuickPay.DAL.Migrations
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -340,9 +338,10 @@ namespace QuickPay.DAL.Migrations
                 {
                     b.HasBaseType("QuickPay.DAL.Entities.FinancialAccount");
 
-                    b.Property<string>("SharedWalletName")
+                    b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<int?>("UserId")
                         .HasColumnType("int");

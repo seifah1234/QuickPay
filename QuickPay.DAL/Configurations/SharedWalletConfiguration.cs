@@ -16,13 +16,6 @@ namespace QuickPay.DAL.Configurations
                 .HasMaxLength(100)
                 .IsRequired();
 
-            builder.Property(x => x.OwnerId)
-                .IsRequired();
-
-            builder.HasOne(x => x.Owner)
-                .WithMany(x => x.OwnedSharedWallets)
-                .HasForeignKey(x => x.OwnerId)
-                .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasMany(x => x.Members)
                 .WithOne(x => x.SharedWallet)

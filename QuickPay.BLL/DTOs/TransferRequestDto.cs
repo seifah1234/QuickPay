@@ -6,6 +6,8 @@ namespace QuickPay.BLL.DTOs
 {
     public class TransferRequestDto
     {
+        public int CurrentUserId { get; set; }
+
         public int FromAccountId { get; set; }
 
         public int ToAccountId { get; set; }

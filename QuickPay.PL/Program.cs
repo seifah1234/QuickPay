@@ -6,6 +6,7 @@ using QuickPay.DAL;
 using QuickPay.DAL.Repositries.Implementaion;
 using QuickPay.DAL.Repositries.Interfaces;
 using QuickPay.DAL.UnitOfWork;
+using QuickPay.PL.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,14 @@ builder.Services.AddScoped<ITransferService,
 
 builder.Services.AddScoped<IFinancialAccountService,
     FinancialAccountService>();
+
+// TEMPORARY: stub current-user resolution until the Identity & Profile
+// module (Phase 1, Member A) merges into develop. Swap CurrentUserService
+// for a real ClaimsPrincipal-based implementation at that point -
+// everything that depends on ICurrentUserService stays unchanged.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService,
+    CurrentUserService>();
 
 builder.Services.AddAutoMapper(m => m.AddProfile<TransferProfile>());
 

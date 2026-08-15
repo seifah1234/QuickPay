@@ -30,6 +30,9 @@ namespace QuickPay.DAL.Configurations
             builder.Property(x => x.CreatedAt)
                 .IsRequired();
 
+            builder.Property(x => x.RowVersion)
+                .IsRowVersion();
+
             builder.HasDiscriminator<string>("AccountType")
                 .HasValue<Wallet>("Wallet")
                 .HasValue<SharedWallet>("SharedWallet");

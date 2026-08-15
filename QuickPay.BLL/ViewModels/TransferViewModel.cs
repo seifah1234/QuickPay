@@ -13,8 +13,10 @@ namespace QuickPay.BLL.ViewModels
         public int FromAccountId { get; set; }
 
         [Range(1, int.MaxValue,
-            ErrorMessage = "Please select a destination account.")]
+            ErrorMessage = "Please search for and select a recipient.")]
         public int ToAccountId { get; set; }
+
+        public string? ToAccountDisplay { get; set; }
 
         [Range(0.01, double.MaxValue,
             ErrorMessage = "Amount must be greater than zero.")]
