@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using QuickPay.DAL.Entities;
 
 namespace QuickPay.DAL
 {
@@ -9,6 +10,33 @@ namespace QuickPay.DAL
         {
         }
 
+        public DbSet<User> Users { get; set; }
+
+        public DbSet<FinancialAccount> FinancialAccounts { get; set; }
+
+        public DbSet<Wallet> Wallets { get; set; }
+
+        public DbSet<SharedWallet> SharedWallets { get; set; }
+
+        public DbSet<SharedWalletMember> SharedWalletMembers { get; set; }
+
+        public DbSet<Transaction> Transactions { get; set; }
+
+        public DbSet<Payment> Payments { get; set; }
+
+        public DbSet<PaymentGatewayTransaction> PaymentGatewayTransactions { get; set; }
+
+        public DbSet<SplitGroup> SplitGroups { get; set; }
+
+        public DbSet<SplitParticipant> SplitParticipants { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.ApplyConfigurationsFromAssembly(
+                typeof(QuickPayDbContext).Assembly);
+        }
 
     }
 }
