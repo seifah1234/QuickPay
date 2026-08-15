@@ -7,6 +7,12 @@ namespace QuickPay.DAL.UnitOfWork
 {
     public interface IUnitOfWork
     {
+        IUserRepository Users { get; }
+
+        IRefreshTokenRepository RefreshTokens { get; }
+
+        IOtpCodeRepository OtpCodes { get; }
+
         ITransactionRepository Transactions { get; }
 
         IFinancialAccountRepository FinancialAccounts { get; }

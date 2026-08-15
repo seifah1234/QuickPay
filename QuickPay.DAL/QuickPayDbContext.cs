@@ -10,7 +10,11 @@ namespace QuickPay.DAL
         {
         }
 
-        public DbSet<User> Users { get; set; }
+        public DbSet<User> Users { get; set; } = null!;
+
+        public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+
+        public DbSet<OtpCode> OtpCodes { get; set; } = null!;
 
         public DbSet<FinancialAccount> FinancialAccounts { get; set; }
 
