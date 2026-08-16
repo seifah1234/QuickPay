@@ -184,6 +184,24 @@
       "Microsoft.EntityFrameworkCore.Analyzers/10.0.11": {
         "type": "package"
       },
+      "Microsoft.EntityFrameworkCore.InMemory/10.0.11": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "10.0.11",
+          "Microsoft.Extensions.Caching.Memory": "10.0.11",
+          "Microsoft.Extensions.Logging": "10.0.11"
+        },
+        "compile": {
+          "lib/net10.0/Microsoft.EntityFrameworkCore.InMemory.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/Microsoft.EntityFrameworkCore.InMemory.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "Microsoft.EntityFrameworkCore.Relational/10.0.11": {
         "type": "package",
         "dependencies": {
@@ -729,6 +747,7 @@
         "framework": ".NETCoreApp,Version=v10.0",
         "dependencies": {
           "Microsoft.EntityFrameworkCore": "10.0.11",
+          "Microsoft.EntityFrameworkCore.InMemory": "10.0.11",
           "Microsoft.EntityFrameworkCore.SqlServer": "10.0.11"
         },
         "compile": {
@@ -937,6 +956,21 @@
         "docs/PACKAGE.md",
         "microsoft.entityframeworkcore.analyzers.10.0.11.nupkg.sha512",
         "microsoft.entityframeworkcore.analyzers.nuspec"
+      ]
+    },
+    "Microsoft.EntityFrameworkCore.InMemory/10.0.11": {
+      "sha512": "QBMaEmLIAzUUnH7+1Vbui+9Ui0dSsglkKxjW4sofOHycB3218UrnrUzq+Y75syrR4krUCtY7loWKaVBOeU3qKw==",
+      "type": "package",
+      "path": "microsoft.entityframeworkcore.inmemory/10.0.11",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "PACKAGE.md",
+        "lib/net10.0/Microsoft.EntityFrameworkCore.InMemory.dll",
+        "lib/net10.0/Microsoft.EntityFrameworkCore.InMemory.xml",
+        "microsoft.entityframeworkcore.inmemory.10.0.11.nupkg.sha512",
+        "microsoft.entityframeworkcore.inmemory.nuspec"
       ]
     },
     "Microsoft.EntityFrameworkCore.Relational/10.0.11": {
@@ -1748,23 +1782,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\DELL\\.nuget\\packages\\": {},
+    "C:\\Users\\IFLEX\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.BLL\\QuickPay.BLL.csproj",
+      "projectUniqueName": "C:\\Users\\IFLEX\\source\\repos\\seifah1234\\QuickPay\\QuickPay.BLL\\QuickPay.BLL.csproj",
       "projectName": "QuickPay.BLL",
-      "projectPath": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.BLL\\QuickPay.BLL.csproj",
-      "packagesPath": "C:\\Users\\DELL\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.BLL\\obj\\",
+      "projectPath": "C:\\Users\\IFLEX\\source\\repos\\seifah1234\\QuickPay\\QuickPay.BLL\\QuickPay.BLL.csproj",
+      "packagesPath": "C:\\Users\\IFLEX\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\IFLEX\\source\\repos\\seifah1234\\QuickPay\\QuickPay.BLL\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\DELL\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\IFLEX\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -1780,8 +1814,8 @@
           "framework": "net10.0",
           "targetAlias": "net10.0",
           "projectReferences": {
-            "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\QuickPay.DAL.csproj": {
-              "projectPath": "C:\\Users\\DELL\\source\\repos\\QuickPay\\QuickPay.DAL\\QuickPay.DAL.csproj"
+            "C:\\Users\\IFLEX\\source\\repos\\seifah1234\\QuickPay\\QuickPay.DAL\\QuickPay.DAL.csproj": {
+              "projectPath": "C:\\Users\\IFLEX\\source\\repos\\seifah1234\\QuickPay\\QuickPay.DAL\\QuickPay.DAL.csproj"
             }
           }
         }

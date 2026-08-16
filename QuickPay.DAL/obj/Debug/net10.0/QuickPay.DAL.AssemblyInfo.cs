@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("QuickPay.DAL")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ac4806ab2b6c22af65ddf84a677de5df33e92003")]
 [assembly: System.Reflection.AssemblyProductAttribute("QuickPay.DAL")]
 [assembly: System.Reflection.AssemblyTitleAttribute("QuickPay.DAL")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
