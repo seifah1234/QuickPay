@@ -9,6 +9,7 @@ using QuickPay.DAL;
 using QuickPay.DAL.Repositries.Implementaion;
 using QuickPay.DAL.Repositries.Interfaces;
 using QuickPay.DAL.UnitOfWork;
+using QuickPay.PL.Hubs;
 using QuickPay.PL.Services;
 using System.Text;
 
@@ -20,11 +21,20 @@ builder.Services.AddDbContext<QuickPayDbContext>(options =>
 LoadDotEnvInto(builder.Configuration, builder.Environment.ContentRootPath);
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddSignalR();
 
 
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("Jwt"));
 
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IOtpCodeRepository, OtpCodeRepository>();
+builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+builder.Services.AddScoped<IFinancialAccountRepository, FinancialAccountRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<IPasswordHasherService, PasswordHasherService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
@@ -34,20 +44,17 @@ builder.Services.AddScoped<IOtpService, OtpService>();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IFinancialAccountService, FinancialAccountService>();
 builder.Services.AddScoped<ITransferService, TransferService>();
 
-builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
-builder.Services.AddScoped<IOtpCodeRepository, OtpCodeRepository>();
-builder.Services.AddScoped<IFinancialAccountRepository, FinancialAccountRepository>();
-builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IRealtimeNotifier, SignalRNotifier>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<ITransactionHistoryService, TransactionHistoryService>();
+
 builder.Services.AddAutoMapper(m => m.AddProfile<AuthProfile>());
 builder.Services.AddAutoMapper(m => m.AddProfile<TransferProfile>());
 
-builder.Services.AddHttpContextAccessor();
 var jwtSettings = builder.Configuration
     .GetSection("Jwt")
     .Get<JwtSettings>()
@@ -101,6 +108,8 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
+app.MapHub<NotificationHub>("/hubs/notifications");
+
 
 app.Run();
 
@@ -140,4 +149,3 @@ static void LoadDotEnvInto(ConfigurationManager configuration, string contentRoo
         configuration[key.Replace("__", ":")] = value;
     }
 }
-
