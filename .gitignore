@@ -362,5 +362,8 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# Rider IDE folder
+# Rider IDE
 .idea/
+
+#Local settings
+appsettings.Development.json
