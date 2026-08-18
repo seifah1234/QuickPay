@@ -1,4 +1,4 @@
-﻿using QuickPay.DAL.Repositries.Interfaces;
+using QuickPay.DAL.Repositries.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -16,6 +16,8 @@ namespace QuickPay.DAL.UnitOfWork
         ITransactionRepository Transactions { get; }
 
         IFinancialAccountRepository FinancialAccounts { get; }
+
+        IWalletRepository Wallets { get; }
 
         INotificationRepository Notifications { get; }
 

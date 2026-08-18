@@ -1,0 +1,66 @@
+@using QuickPay.BLL.ViewModels
+@model WalletIndexViewModel
+
+@{
+    ViewData["Title"] = "My Wallets";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+
+            @if (TempData["SuccessMessage"] is not null)
+            {
+                <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+            }
+            @if (TempData["ErrorMessage"] is not null)
+            {
+                <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+            }
+
+            <h2 class="mb-4">My Wallets</h2>
+
+            @foreach (var wallet in Model.Wallets)
+            {
+                <div class="card shadow-sm border-0 mb-3">
+                    <div class="card-body p-4">
+                        <h5>@wallet.Name</h5>
+                        <p class="text-muted">@wallet.Balance.ToString("N2") @wallet.Currency</p>
+
+                        <form asp-action="Deposit" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="walletId" value="@wallet.Id" />
+                            <input type="number" step="0.01" name="amount" class="form-control d-inline w-auto" />
+                            <button type="submit" class="btn btn-success btn-sm">Deposit</button>
+                        </form>
+
+                        <form asp-action="Withdraw" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="walletId" value="@wallet.Id" />
+                            <input type="number" step="0.01" name="amount" class="form-control d-inline w-auto" />
+                            <button type="submit" class="btn btn-warning btn-sm">Withdraw</button>
+                        </form>
+
+                        <form asp-action="Delete" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="walletId" value="@wallet.Id" />
+                            <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            }
+
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <h5>Create a new Money Space</h5>
+                    <form asp-action="Create" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="text" name="newWalletName" class="form-control mb-2" placeholder="Wallet name" />
+                        <button type="submit" class="btn btn-primary">Create</button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
