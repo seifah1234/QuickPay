@@ -27,6 +27,13 @@
                         <h5>@wallet.Name</h5>
                         <p class="text-muted">@wallet.Balance.ToString("N2") @wallet.Currency</p>
 
+                        <form asp-action="Rename" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="walletId" value="@wallet.Id" />
+                            <input type="text" name="newName" value="@wallet.Name" class="form-control d-inline w-auto" />
+                            <button type="submit" class="btn btn-secondary btn-sm">Rename</button>
+                        </form>
+
                         <form asp-action="Deposit" method="post" class="d-inline">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="walletId" value="@wallet.Id" />
