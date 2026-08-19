@@ -22,10 +22,10 @@
 
             @foreach (var wallet in Model.Wallets)
             {
-                <div class="card shadow-sm border-0 mb-3">
+                <div class="card shadow-sm qp-wallet-card mb-3">
                     <div class="card-body p-4">
                         <h5>@wallet.Name</h5>
-                        <p class="text-muted">@wallet.Balance.ToString("N2") @wallet.Currency</p>
+                        <p class="amount fs-5 mb-3">@wallet.Balance.ToString("N2") <span class="text-muted fs-6">@wallet.Currency</span></p>
 
                         <form asp-action="Rename" method="post" class="d-inline">
                             @Html.AntiForgeryToken()
@@ -57,7 +57,7 @@
                 </div>
             }
 
-            <div class="card shadow-sm border-0">
+            <div class="card shadow-sm">
                 <div class="card-body p-4">
                     <h5>Create a new Money Space</h5>
                     <form asp-action="Create" method="post">

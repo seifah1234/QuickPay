@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using QuickPay.BLL.DTOs;
 using QuickPay.BLL.Services.Interfaces;
 using QuickPay.BLL.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 
+[Authorize]
 public class WalletController : Controller
 {
     private readonly IWalletService _walletService;

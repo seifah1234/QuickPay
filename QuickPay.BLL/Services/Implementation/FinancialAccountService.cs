@@ -64,7 +64,7 @@ namespace QuickPay.BLL.Services.Implementation
             return account switch
             {
                 Wallet wallet =>
-                    $"{wallet.User?.UserName ?? "Unknown"} Wallet",
+                    $"{wallet.Name ?? "Unknown"} - {wallet.User.UserName} Wallet",
 
                 SharedWallet sharedWallet =>
                     sharedWallet.Name,

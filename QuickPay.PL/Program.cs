@@ -107,7 +107,7 @@ app.MapStaticAssets();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
+    pattern: "{controller=Auth}/{action=Login}")
     .WithStaticAssets();
 
 app.MapHub<NotificationHub>("/hubs/notifications");

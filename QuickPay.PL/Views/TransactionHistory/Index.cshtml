@@ -39,7 +39,11 @@
                                         @tx.Direction
                                     </span>
                                 </td>
-                                <td>@tx.Amount.ToString("N2")</td>
+                                <td>
+                                    <span class="amount @(tx.Direction == "Outgoing" ? "amount-out" : "amount-in")">
+                                        @(tx.Direction == "Outgoing" ? "-" : "+")@tx.Amount.ToString("N2")
+                                    </span>
+                                </td>
                                 <td>@tx.Status</td>
                             </tr>
                         }
