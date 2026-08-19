@@ -1,8 +1,43 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "QuickPay";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="qp-hero">
+    <div class="qp-eyebrow">Money, moved simply</div>
+    <h1>Send, hold, and track your money in one place</h1>
+    <p class="lead">
+        QuickPay keeps your wallets, transfers, and transaction history in a single
+        clear ledger &mdash; so you always know where your money stands.
+    </p>
+    <div class="d-flex justify-content-center gap-3 flex-wrap">
+        <a asp-controller="Auth" asp-action="Register" class="btn btn-primary btn-lg px-4">Create an account</a>
+        <a asp-controller="Wallet" asp-action="Index" class="btn btn-outline-secondary btn-lg px-4">View my wallets</a>
+    </div>
+</div>
+
+<div class="row justify-content-center g-4 mt-2 mb-5">
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body p-4">
+                <h5>Wallets</h5>
+                <p class="text-muted mb-0">Create Money Spaces, deposit, withdraw, and rename them any time.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body p-4">
+                <h5>Transfers</h5>
+                <p class="text-muted mb-0">Send money by username, phone number, or shared wallet, instantly.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body p-4">
+                <h5>History</h5>
+                <p class="text-muted mb-0">Every transaction logged in a clear, precise ledger you can page through.</p>
+            </div>
+        </div>
+    </div>
 </div>
