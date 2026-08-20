@@ -1,0 +1,56 @@
+﻿@using QuickPay.BLL.ViewModels.Auth
+@model LoginViewModel
+
+@{
+    ViewData["Title"] = "Log In";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+
+                    <h2 class="mb-1">Welcome Back</h2>
+                    <p class="text-muted mb-4">
+                        Log in to your QuickPay account.
+                    </p>
+
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <form asp-action="Login" asp-controller="Auth" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label"></label>
+                            <input asp-for="Email" class="form-control" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Password" class="form-label"></label>
+                            <input asp-for="Password" class="form-control" />
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            Log In
+                        </button>
+
+                    </form>
+
+                    <p class="text-center mt-3 mb-0">
+                        Don't have an account?
+                        <a asp-action="Register" asp-controller="Auth">Sign up</a>
+                    </p>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <partial name="_ValidationScriptsPartial" />
+}
