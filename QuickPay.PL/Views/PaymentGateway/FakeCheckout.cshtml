@@ -1,0 +1,54 @@
+﻿@{
+    ViewData["Title"] = "Complete Payment";
+    string gatewayTransactionId = ViewBag.GatewayTransactionId;
+    decimal amount = ViewBag.Amount;
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4 text-center">
+
+                    <div class="alert alert-warning">
+                        This is a local simulated checkout page
+                        (FakePaymentGatewayProvider) - not a real payment
+                        gateway. It exists so the webhook + signature +
+                        idempotency code can be tested before real
+                        Paymob/Stripe keys are available.
+                    </div>
+
+                    <h2 class="mb-1">Complete Payment</h2>
+                    <p class="text-muted mb-4">
+                        Amount: @amount.ToString("N2") EGP
+                    </p>
+
+                    <div class="d-grid gap-2">
+
+                        <form asp-action="FakeCheckoutSubmit" asp-controller="PaymentGateway" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="gatewayTransactionId" value="@gatewayTransactionId" />
+                            <input type="hidden" name="amount" value="@amount" />
+                            <input type="hidden" name="approve" value="true" />
+                            <button type="submit" class="btn btn-success w-100">
+                                Simulate Successful Payment
+                            </button>
+                        </form>
+
+                        <form asp-action="FakeCheckoutSubmit" asp-controller="PaymentGateway" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="gatewayTransactionId" value="@gatewayTransactionId" />
+                            <input type="hidden" name="amount" value="@amount" />
+                            <input type="hidden" name="approve" value="false" />
+                            <button type="submit" class="btn btn-outline-danger w-100">
+                                Simulate Failed Payment
+                            </button>
+                        </form>
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

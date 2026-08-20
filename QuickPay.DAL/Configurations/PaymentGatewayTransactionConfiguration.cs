@@ -1,9 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using QuickPay.DAL.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace QuickPay.DAL.Configurations
 {
@@ -25,14 +22,35 @@ namespace QuickPay.DAL.Configurations
                 .HasPrecision(18, 2)
                 .IsRequired();
 
+            builder.Property(x => x.Direction)
+                .IsRequired();
+
             builder.Property(x => x.Status)
                 .IsRequired();
 
             builder.Property(x => x.CreatedAt)
                 .IsRequired();
 
+            // Same GatewayTransactionId can never be processed twice -
+            // this unique index IS the idempotency guard on webhook
+            // replays/duplicate deliveries.
             builder.HasIndex(x => x.GatewayTransactionId)
                 .IsUnique();
+
+            builder.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(x => x.Wallet)
+                .WithMany()
+                .HasForeignKey(x => x.WalletId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(x => x.BankAccount)
+                .WithMany()
+                .HasForeignKey(x => x.BankAccountId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

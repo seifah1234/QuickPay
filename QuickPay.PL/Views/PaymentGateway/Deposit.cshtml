@@ -1,0 +1,49 @@
+﻿@{
+    ViewData["Title"] = "Deposit";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+
+                    <h2 class="mb-4">Deposit</h2>
+
+                    @if (TempData["ErrorMessage"] is not null)
+                    {
+                        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+                    }
+
+                    <form asp-action="Deposit" asp-controller="PaymentGateway" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-3">
+                            <label class="form-label">Wallet</label>
+                            <select name="walletId" class="form-select">
+                                @foreach (var account in (IEnumerable<dynamic>)ViewBag.Accounts)
+                                {
+                                    <option value="@account.Id">@account.DisplayName - @account.Balance.ToString("N2") @account.Currency</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Amount</label>
+                            <div class="input-group">
+                                <input type="number" name="amount" step="0.01" min="1" class="form-control" required />
+                                <span class="input-group-text">EGP</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            Continue to Payment
+                        </button>
+
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

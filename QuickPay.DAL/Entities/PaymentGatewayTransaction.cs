@@ -4,6 +4,19 @@ namespace QuickPay.DAL.Entities
 {
     public class PaymentGatewayTransaction : BaseEntity
     {
+        public int UserId { get; set; }
+
+        public User User { get; set; } = null!;
+
+        public int WalletId { get; set; }
+
+        public Wallet Wallet { get; set; } = null!;
+
+        public PaymentGatewayDirection Direction { get; set; }
+
+        public int? BankAccountId { get; set; }
+
+        public BankAccount? BankAccount { get; set; }
 
         public string GatewayTransactionId { get; set; } = null!;
 

@@ -1,0 +1,80 @@
+﻿@using QuickPay.BLL.DTOs.PaymentGateway
+@model IEnumerable<BankAccountDto>
+
+@{
+    ViewData["Title"] = "Linked Accounts";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+
+            <h2 class="mb-4">Linked Accounts</h2>
+
+            @if (TempData["SuccessMessage"] is not null)
+            {
+                <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+            }
+            @if (TempData["ErrorMessage"] is not null)
+            {
+                <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+            }
+
+            <div class="list-group mb-4">
+                @foreach (var account in Model)
+                {
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-semibold">@account.DisplayName</div>
+                            <small class="text-muted">@account.MaskedNumber</small>
+                        </div>
+                        <form asp-action="Unlink" asp-controller="LinkedAccounts" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@account.Id" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                Remove
+                            </button>
+                        </form>
+                    </div>
+                }
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <h5 class="mb-3">Link a New Account</h5>
+
+                    <div class="alert alert-warning small">
+                        Placeholder form - a real card number/CVV should
+                        never be typed here. This stands in for the
+                        gateway's own tokenization widget until it's wired in.
+                    </div>
+
+                    <form asp-action="Link" asp-controller="LinkedAccounts" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-3">
+                            <label class="form-label">Display Name</label>
+                            <input type="text" name="displayName" class="form-control" placeholder="My Visa Card" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Masked Number</label>
+                            <input type="text" name="maskedNumber" class="form-control" placeholder="**** 4242" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Gateway Token</label>
+                            <input type="text" name="gatewayToken" class="form-control" placeholder="Returned by the gateway's tokenization step" required />
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            Link Account
+                        </button>
+
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
