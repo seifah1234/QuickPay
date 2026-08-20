@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using QuickPay.DAL.Entities;
 
 namespace QuickPay.DAL
