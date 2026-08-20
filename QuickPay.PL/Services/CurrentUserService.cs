@@ -1,11 +1,12 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using QuickPay.BLL.Services.Interfaces;
 
 namespace QuickPay.PL.Services
 {
     public class CurrentUserService : ICurrentUserService
     {
-        private const int DefaultStubUserId = 1;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         public CurrentUserService(IHttpContextAccessor httpContextAccessor)
@@ -15,13 +16,25 @@ namespace QuickPay.PL.Services
 
         public int GetCurrentUserId()
         {
-            var header = _httpContextAccessor.HttpContext?
-                .Request.Headers["X-Debug-User-Id"]
-                .FirstOrDefault();
+            var user = _httpContextAccessor.HttpContext?.User;
 
-            return int.TryParse(header, out var userId)
-                ? userId
-                : DefaultStubUserId;
+            if (user?.Identity?.IsAuthenticated != true)
+            {
+                throw new UnauthorizedAccessException(
+                    "User is not authenticated.");
+            }
+
+            var userIdClaim =
+                user.FindFirstValue(JwtRegisteredClaimNames.Sub)
+                ?? user.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!int.TryParse(userIdClaim, out var userId))
+            {
+                throw new UnauthorizedAccessException(
+                    "User ID claim is missing or invalid.");
+            }
+
+            return userId;
         }
     }
 }

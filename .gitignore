@@ -367,3 +367,4 @@ FodyWeavers.xsd
 
 #Local settings
 appsettings.Development.json
+.env

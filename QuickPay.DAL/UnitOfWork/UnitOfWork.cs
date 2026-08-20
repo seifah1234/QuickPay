@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -24,10 +24,13 @@ namespace QuickPay.DAL.UnitOfWork
 
         public IFinancialAccountRepository FinancialAccounts { get; }
 
+        public IWalletRepository Wallets { get; }
+
         public UnitOfWork(
             QuickPayDbContext context,
             ITransactionRepository transactionRepository,
             IFinancialAccountRepository financialAccountRepository,
+            IWalletRepository walletRepository,
             IUserRepository userRepository,
             IRefreshTokenRepository refreshTokenRepository,
             IOtpCodeRepository otpCodeRepository,
@@ -37,6 +40,7 @@ namespace QuickPay.DAL.UnitOfWork
 
             Transactions = transactionRepository;
             FinancialAccounts = financialAccountRepository;
+            Wallets = walletRepository;
 
             Users = userRepository;
             RefreshTokens = refreshTokenRepository;

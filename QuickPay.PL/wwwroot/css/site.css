@@ -1,31 +1,505 @@
-html {
-  font-size: 14px;
+/* ============================================================
+   QuickPay design system
+   Replaces default Bootstrap look & feel across the app.
+   Brand: deep emerald + warm amber, on a cool paper background.
+   Amounts are always set in mono tabular figures (ledger feel).
+   ============================================================ */
+
+:root {
+    /* -- palette -- */
+    --qp-ink: #0e1f17;
+    --qp-ink-soft: #3d4f47;
+    --qp-muted: #5c7268;
+    --qp-paper: #f6f8f5;
+    --qp-surface: #ffffff;
+    --qp-line: #d8e2dc;
+    --qp-line-soft: #e8eee9;
+    --qp-brand: #0f6e4c;
+    --qp-brand-dark: #0a4f37;
+    --qp-brand-darker: #073a29;
+    --qp-brand-tint: #e4f1ea;
+    --qp-accent: #e58a2e;
+    --qp-accent-dark: #c76f1a;
+    --qp-accent-tint: #fbeadb;
+    --qp-danger: #c4432e;
+    --qp-danger-tint: #f8e4df;
+    --qp-success: #0f6e4c;
+    /* -- type -- */
+    --qp-font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+    --qp-font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --qp-font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+    --qp-radius: 14px;
+    --qp-radius-sm: 8px;
+    --qp-shadow: 0 1px 2px rgba(14, 31, 23, 0.04), 0 8px 24px -12px rgba(14, 31, 23, 0.12);
 }
 
-@media (min-width: 768px) {
-  html {
+/* -------------------- base -------------------- */
+
+html {
     font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
 }
 
 body {
-  margin-bottom: 60px;
+    margin: 0;
+    font-family: var(--qp-font-body);
+    color: var(--qp-ink);
+    background-color: var(--qp-paper);
+    background-image: radial-gradient(circle at 100% 0%, var(--qp-brand-tint) 0%, transparent 45%), radial-gradient(circle at 0% 100%, var(--qp-accent-tint) 0%, transparent 40%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
+main[role="main"] {
+    flex: 1 0 auto;
 }
 
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--qp-font-display);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--qp-ink);
+}
+
+a {
+    color: var(--qp-brand);
+    text-decoration: none;
+}
+
+    a:hover {
+        color: var(--qp-brand-dark);
+        text-decoration: underline;
+    }
+
+.text-muted {
+    color: var(--qp-muted) !important;
+}
+
+::selection {
+    background: var(--qp-brand-tint);
+    color: var(--qp-brand-darker);
+}
+
+/* focus ring, in brand colors instead of Bootstrap blue */
+.btn:focus, .btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus, .form-check-input:focus, .form-select:focus {
+    box-shadow: 0 0 0 0.15rem var(--qp-paper), 0 0 0 0.3rem rgba(15, 110, 76, 0.45) !important;
+    border-color: var(--qp-brand) !important;
+}
+
+/* -------------------- money / ledger -------------------- */
+
+.amount,
+.qp-amount {
+    font-family: var(--qp-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+    .amount-in,
+    .qp-amount.is-in {
+        color: var(--qp-brand);
+    }
+
+    .amount-out,
+    .qp-amount.is-out {
+        color: var(--qp-danger);
+    }
+
+/* -------------------- navbar -------------------- */
+
+.navbar {
+    background: linear-gradient(180deg, var(--qp-brand-darker) 0%, var(--qp-brand-dark) 100%) !important;
+    box-shadow: 0 2px 12px rgba(7, 58, 41, 0.25);
+    padding-top: .65rem;
+    padding-bottom: .65rem;
+}
+
+    .navbar .navbar-brand {
+        font-family: var(--qp-font-display);
+        font-weight: 700;
+        font-size: 1.35rem;
+        color: #ffffff !important;
+        letter-spacing: -0.02em;
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+    }
+
+        .navbar .navbar-brand::before {
+            content: "";
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            background: var(--qp-accent);
+            transform: rotate(45deg);
+        }
+
+    .navbar .nav-link {
+        color: rgba(255, 255, 255, 0.78) !important;
+        font-weight: 500;
+        font-size: .95rem;
+        padding: .5rem .9rem !important;
+        border-radius: var(--qp-radius-sm);
+        transition: color .15s ease, background-color .15s ease;
+    }
+
+        .navbar .nav-link:hover {
+            color: #ffffff !important;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .navbar .nav-link.active {
+            color: #ffffff !important;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+.navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+.navbar-toggler-icon {
+    filter: invert(1);
+}
+
+/* -------------------- buttons -------------------- */
+
+.btn {
+    font-family: var(--qp-font-body);
+    font-weight: 600;
+    border-radius: var(--qp-radius-sm);
+    padding: .55rem 1.1rem;
+    border-width: 1.5px;
+    transition: transform .1s ease, box-shadow .15s ease, background-color .15s ease, border-color .15s ease;
+}
+
+    .btn:active {
+        transform: translateY(1px);
+    }
+
+.btn-primary {
+    background-color: var(--qp-brand);
+    border-color: var(--qp-brand);
+    color: #fff;
+}
+
+    .btn-primary:hover, .btn-primary:focus {
+        background-color: var(--qp-brand-dark);
+        border-color: var(--qp-brand-dark);
+        color: #fff;
+    }
+
+.btn-secondary {
+    background-color: var(--qp-surface);
+    border-color: var(--qp-line);
+    color: var(--qp-ink-soft);
+}
+
+    .btn-secondary:hover {
+        background-color: var(--qp-line-soft);
+        border-color: var(--qp-line);
+        color: var(--qp-ink);
+    }
+
+.btn-success {
+    background-color: var(--qp-brand);
+    border-color: var(--qp-brand);
+}
+
+    .btn-success:hover {
+        background-color: var(--qp-brand-dark);
+        border-color: var(--qp-brand-dark);
+    }
+
+.btn-warning {
+    background-color: var(--qp-accent);
+    border-color: var(--qp-accent);
+    color: #fff;
+}
+
+    .btn-warning:hover {
+        background-color: var(--qp-accent-dark);
+        border-color: var(--qp-accent-dark);
+        color: #fff;
+    }
+
+.btn-outline-danger {
+    color: var(--qp-danger);
+    border-color: var(--qp-danger);
+}
+
+    .btn-outline-danger:hover {
+        background-color: var(--qp-danger);
+        border-color: var(--qp-danger);
+    }
+
+.btn-outline-secondary {
+    color: var(--qp-ink-soft);
+    border-color: var(--qp-line);
+}
+
+    .btn-outline-secondary:hover {
+        background-color: var(--qp-ink);
+        border-color: var(--qp-ink);
+        color: #fff;
+    }
+
+.btn-sm {
+    padding: .35rem .75rem;
+    font-size: .85rem;
+}
+
+/* -------------------- cards -------------------- */
+
+.card {
+    border: 1px solid var(--qp-line);
+    border-radius: var(--qp-radius);
+    background-color: var(--qp-surface);
+}
+
+    .card.shadow-sm {
+        box-shadow: var(--qp-shadow) !important;
+    }
+
+/* wallet / balance cards get a brand accent bar */
+.qp-wallet-card {
+    position: relative;
+    overflow: hidden;
+}
+
+    .qp-wallet-card::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 4px;
+        background: var(--qp-brand);
+    }
+
+    .qp-wallet-card .card-body {
+        padding-left: 1.75rem;
+    }
+
+/* -------------------- forms -------------------- */
+
+.form-label {
+    font-weight: 600;
+    font-size: .875rem;
+    color: var(--qp-ink-soft);
+    margin-bottom: .35rem;
+}
+
+.form-control, .form-select {
+    border: 1.5px solid var(--qp-line);
+    border-radius: var(--qp-radius-sm);
+    padding: .55rem .85rem;
+    background-color: var(--qp-surface);
+    color: var(--qp-ink);
+}
+
+    .form-control::placeholder {
+        color: #9caea6;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--qp-brand);
+    }
+
+.input-group-text {
+    background-color: var(--qp-brand-tint);
+    border: 1.5px solid var(--qp-line);
+    color: var(--qp-brand-dark);
+    font-weight: 600;
+    font-family: var(--qp-font-mono);
+}
+
+/* -------------------- alerts -------------------- */
+
+.alert {
+    border: 1px solid transparent;
+    border-radius: var(--qp-radius-sm);
+    font-size: .925rem;
+}
+
+.alert-success {
+    background-color: var(--qp-brand-tint);
+    border-color: #bfe0cd;
+    color: var(--qp-brand-darker);
+}
+
+.alert-danger {
+    background-color: var(--qp-danger-tint);
+    border-color: #edc3b8;
+    color: #7a2c1c;
+}
+
+.alert-info {
+    background-color: var(--qp-accent-tint);
+    border-color: #f0d3ab;
+    color: #7a4b12;
+}
+
+/* -------------------- badges -------------------- */
+
+.badge {
+    font-family: var(--qp-font-mono);
+    font-weight: 600;
+    letter-spacing: .01em;
+    padding: .4em .65em;
+    border-radius: 6px;
+}
+
+    .badge.bg-success {
+        background-color: var(--qp-brand) !important;
+    }
+
+    .badge.bg-danger {
+        background-color: var(--qp-danger) !important;
+    }
+
+/* -------------------- tables -------------------- */
+
+.table {
+    --bs-table-bg: transparent;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+    .table thead th {
+        font-family: var(--qp-font-body);
+        font-size: .75rem;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: var(--qp-muted);
+        font-weight: 700;
+        border-bottom: 1.5px solid var(--qp-line);
+        padding: .75rem;
+    }
+
+    .table tbody td {
+        padding: .75rem;
+        border-bottom: 1px solid var(--qp-line-soft);
+        vertical-align: middle;
+        color: var(--qp-ink-soft);
+    }
+
+    .table tbody tr:hover td {
+        background-color: var(--qp-brand-tint);
+    }
+
+    .table td:nth-child(4) {
+        font-family: var(--qp-font-mono);
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+        color: var(--qp-ink);
+    }
+
+/* -------------------- list group (notifications) -------------------- */
+
+.list-group-item {
+    border: 1px solid var(--qp-line);
+    border-radius: var(--qp-radius-sm) !important;
+    margin-bottom: .5rem;
+    padding: 1rem 1.1rem;
+}
+
+    .list-group-item.list-group-item-primary {
+        background-color: var(--qp-brand-tint);
+        border-color: #bfe0cd;
+    }
+
+        .list-group-item.list-group-item-primary .fw-semibold {
+            color: var(--qp-brand-darker);
+        }
+
+#recipientResults.list-group {
+    position: relative;
+    z-index: 5;
+}
+
+#recipientResults .list-group-item {
+    cursor: pointer;
+    margin-bottom: 0;
+    border-radius: 0 !important;
+}
+
+    #recipientResults .list-group-item:first-child {
+        border-top-left-radius: var(--qp-radius-sm) !important;
+        border-top-right-radius: var(--qp-radius-sm) !important;
+    }
+
+    #recipientResults .list-group-item:last-child {
+        border-bottom-left-radius: var(--qp-radius-sm) !important;
+        border-bottom-right-radius: var(--qp-radius-sm) !important;
+    }
+
+    #recipientResults .list-group-item:hover {
+        background-color: var(--qp-brand-tint);
+    }
+
+/* -------------------- footer -------------------- */
+
+.footer {
+    border-top: 1px solid var(--qp-line);
+    background-color: var(--qp-surface);
+    color: var(--qp-muted);
+    font-size: .875rem;
+}
+
+    .footer a {
+        color: var(--qp-muted);
+        text-decoration: underline;
+    }
+
+/* -------------------- hero (home) -------------------- */
+
+.qp-hero {
+    padding: 4rem 1rem 3rem;
+    text-align: center;
+}
+
+    .qp-hero .qp-eyebrow {
+        font-family: var(--qp-font-mono);
+        font-size: .8rem;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: var(--qp-brand);
+        font-weight: 700;
+    }
+
+    .qp-hero h1 {
+        font-size: clamp(2.25rem, 5vw, 3.25rem);
+        margin: .5rem 0 1rem;
+    }
+
+    .qp-hero p.lead {
+        color: var(--qp-muted);
+        max-width: 42rem;
+        margin: 0 auto 2rem;
+    }
+
+/* -------------------- misc -------------------- */
+
+body {
+    margin-bottom: 60px;
+}
+
+.form-floating > .form-control-plaintext::placeholder,
+.form-floating > .form-control::placeholder {
+    color: var(--qp-muted);
+    text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder,
+.form-floating > .form-control:focus::placeholder {
+    text-align: start;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .btn {
+        transition: none;
+    }
 }
