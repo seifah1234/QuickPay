@@ -14,10 +14,6 @@ namespace QuickPay.BLL.Services.Implementation
             GatewayChargeRequest request,
             CancellationToken cancellationToken = default)
         {
-            // Use the caller's own merchant reference as the correlation id,
-            // same as the real Paymob provider does (via special_reference /
-            // order.merchant_order_id) - keeps both providers' webhook
-            // matching logic identical.
             var gatewayTransactionId = request.MerchantReference;
 
             var result = new GatewayChargeResult

@@ -4,6 +4,7 @@ using QuickPay.BLL.Services.Interfaces;
 using QuickPay.DAL.Entities;
 using QuickPay.DAL.Enums;
 using QuickPay.DAL.UnitOfWork;
+using System.Collections.Concurrent;
 
 namespace QuickPay.BLL.Services.Implementation
 {
@@ -14,6 +15,7 @@ namespace QuickPay.BLL.Services.Implementation
         private readonly INotificationService _notificationService;
         private readonly ILinkedAccountsService _linkedAccountsService;
 
+        private static readonly ConcurrentDictionary<string, GatewayWebhookEvent> _pendingTokens = new();
         private const decimal LinkCardVerificationAmount = 1.00m;
 
         public PaymentGatewayService(
@@ -244,11 +246,20 @@ namespace QuickPay.BLL.Services.Implementation
             string receivedSignature,
             CancellationToken cancellationToken = default)
         {
+            Console.WriteLine("=================================");
+            Console.WriteLine("PAYMOB WEBHOOK");
+            Console.WriteLine($"Raw Body: {rawBody}");
+            Console.WriteLine($"Query: {string.Join(", ", query.Select(x => $"{x.Key}={x.Value}"))}");
+            Console.WriteLine($"Signature: {receivedSignature}");
+            Console.WriteLine("=================================");
+
             if (!_provider.VerifyWebhookSignature(rawBody, query, receivedSignature))
             {
+                Console.WriteLine("Signature verification FAILED");
                 return false;
             }
 
+            Console.WriteLine("Signature verified OK");
             var webhookEvent = _provider.ParseWebhookEvent(rawBody, query);
 
             if (webhookEvent.EventType == GatewayWebhookEventType.CardToken)
@@ -259,12 +270,9 @@ namespace QuickPay.BLL.Services.Implementation
             return await HandleTransactionCallbackAsync(webhookEvent, cancellationToken);
         }
 
-        // TOKEN callback: the second, separate webhook Paymob fires only
-        // when "Save Card" is enabled and a card was actually saved. This
-        // is the only place CardToken/MaskedPan/CardSubType exist.
         private async Task<bool> HandleCardTokenCallbackAsync(
-            GatewayWebhookEvent webhookEvent,
-            CancellationToken cancellationToken)
+    GatewayWebhookEvent webhookEvent,
+    CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(webhookEvent.ProviderOrderId))
             {
@@ -279,19 +287,17 @@ namespace QuickPay.BLL.Services.Implementation
                 pgt.Direction != PaymentGatewayDirection.LinkCard ||
                 pgt.Status != PaymentGatewayTransactionStatus.Pending)
             {
-                // Either the matching TRANSACTION callback hasn't been
-                // processed yet (race condition - Paymob should retry a
-                // non-200 response) or this token isn't for a link-card
-                // flow we know about.
-                return false;
+
+                _pendingTokens[webhookEvent.ProviderOrderId] = webhookEvent;
+                return true;
             }
 
             return await CompleteLinkCardAsync(pgt, webhookEvent, cancellationToken);
         }
 
         private async Task<bool> HandleTransactionCallbackAsync(
-            GatewayWebhookEvent webhookEvent,
-            CancellationToken cancellationToken)
+    GatewayWebhookEvent webhookEvent,
+    CancellationToken cancellationToken)
         {
             var pgt = await _unitOfWork.PaymentGatewayTransactions
                 .GetByGatewayTransactionIdAsync(
@@ -309,36 +315,7 @@ namespace QuickPay.BLL.Services.Implementation
 
             if (pgt.Direction == PaymentGatewayDirection.LinkCard)
             {
-                if (!webhookEvent.IsSuccessful)
-                {
-                    pgt.Status = PaymentGatewayTransactionStatus.Failed;
-                    pgt.CompletedAt = DateTime.UtcNow;
-                    await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-                    await _notificationService.NotifyAsync(
-                        pgt.UserId,
-                        type: "CardLinkFailed",
-                        message: "We couldn't verify your card. Nothing was charged.",
-                        cancellationToken);
-
-                    return true;
-                }
-
-                // Remember Paymob's ids so a later, separate TOKEN callback
-                // can be matched back to this row. Stays Pending until then
-                // - unless the provider already attached card data to this
-                // same event (the Fake gateway does this, real Paymob does
-                // not), in which case finish immediately.
-                pgt.ProviderOrderId = webhookEvent.ProviderOrderId;
-                pgt.ProviderTransactionId = webhookEvent.ProviderTransactionId;
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-                if (!string.IsNullOrWhiteSpace(webhookEvent.CardToken))
-                {
-                    return await CompleteLinkCardAsync(pgt, webhookEvent, cancellationToken);
-                }
-
-                return true;
+                return await HandleLinkCardTransactionAsync(pgt, webhookEvent, cancellationToken);
             }
 
             await _unitOfWork.BeginTransactionAsync(cancellationToken);
@@ -352,10 +329,10 @@ namespace QuickPay.BLL.Services.Implementation
                 pgt.ProviderTransactionId = webhookEvent.ProviderTransactionId;
                 pgt.ProviderOrderId = webhookEvent.ProviderOrderId;
 
-                if (webhookEvent.IsSuccessful)
+                if (webhookEvent.IsSuccessful && pgt.WalletId.HasValue)
                 {
                     var wallet = await _unitOfWork.Wallets.GetByIdAsync(
-                        pgt.WalletId!.Value, cancellationToken);
+                        pgt.WalletId.Value, cancellationToken);
 
                     if (wallet is null)
                     {
@@ -385,16 +362,7 @@ namespace QuickPay.BLL.Services.Implementation
                         ledgerTransaction, cancellationToken);
                 }
 
-                try
-                {
-                    await _unitOfWork.SaveChangesAsync(cancellationToken);
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    throw new InvalidOperationException(
-                        "The wallet was updated at the same time by another operation.");
-                }
-
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(cancellationToken);
             }
             catch
@@ -416,55 +384,121 @@ namespace QuickPay.BLL.Services.Implementation
             return true;
         }
 
-        private async Task<bool> CompleteLinkCardAsync(
-            PaymentGatewayTransaction pgt,
-            GatewayWebhookEvent webhookEvent,
-            CancellationToken cancellationToken)
+        private async Task<bool> HandleLinkCardTransactionAsync(
+    PaymentGatewayTransaction pgt,
+    GatewayWebhookEvent webhookEvent,
+    CancellationToken cancellationToken)
         {
-            if (string.IsNullOrWhiteSpace(webhookEvent.CardToken))
+            if (!webhookEvent.IsSuccessful)
             {
-                return false;
+                pgt.Status = PaymentGatewayTransactionStatus.Failed;
+                pgt.CompletedAt = DateTime.UtcNow;
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                return true;
             }
 
-            BankAccount linkedAccount;
+            if (_pendingTokens.TryRemove(webhookEvent.ProviderOrderId!, out var tokenEvent))
+            {
+                return await CompleteLinkCardAsync(pgt, tokenEvent, cancellationToken);
+            }
 
+            pgt.ProviderOrderId = webhookEvent.ProviderOrderId;
+            pgt.ProviderTransactionId = webhookEvent.ProviderTransactionId;
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            Console.WriteLine(
+                    $"Transaction succeeded. Waiting for TOKEN callback. " +
+                    $"OrderId: {webhookEvent.ProviderOrderId}");
+            return true;
+        }
+
+        private async Task<bool> CreateBankAccountFromTransactionAsync(
+            PaymentGatewayTransaction pgt,
+            GatewayWebhookEvent webhookEvent,
+            string maskedPan,
+            string cardSubType,
+            CancellationToken cancellationToken)
+        {
             await _unitOfWork.BeginTransactionAsync(cancellationToken);
 
             try
             {
                 pgt.Status = PaymentGatewayTransactionStatus.Succeeded;
                 pgt.CompletedAt = DateTime.UtcNow;
+                pgt.ProviderOrderId = webhookEvent.ProviderOrderId;
+                pgt.ProviderTransactionId = webhookEvent.ProviderTransactionId;
 
-                var linkedAccountDto = await _linkedAccountsService.LinkAsync(
-                    new LinkBankAccountRequestDto
-                    {
-                        CurrentUserId = pgt.UserId,
-                        DisplayName = BuildCardDisplayName(
-                            webhookEvent.CardSubType, webhookEvent.MaskedPan),
-                        MaskedNumber = webhookEvent.MaskedPan ?? "****",
-                        GatewayToken = webhookEvent.CardToken
-                    },
-                    cancellationToken);
-
-                linkedAccount = new BankAccount
+                var bankAccount = new BankAccount
                 {
-                    Id = linkedAccountDto.Id,
-                    DisplayName = linkedAccountDto.DisplayName,
-                    MaskedNumber = linkedAccountDto.MaskedNumber
+                    UserId = pgt.UserId,
+                    DisplayName = BuildCardDisplayName(cardSubType, maskedPan),
+                    MaskedNumber = maskedPan,
+                    GatewayToken = webhookEvent.ProviderTransactionId ?? pgt.GatewayTransactionId,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 };
 
+                await _unitOfWork.BankAccounts.AddAsync(bankAccount, cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(cancellationToken);
+
+                Console.WriteLine($"BankAccount created: {maskedPan}, Token: {bankAccount.GatewayToken}");
+
+                await NotifyLinkCardOutcomeAsync(pgt, bankAccount, cancellationToken);
+
+                return true;
             }
-            catch
+            catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+                Console.WriteLine($"Error creating BankAccount: {ex.Message}");
                 throw;
             }
+        }
 
-            await NotifyLinkCardOutcomeAsync(pgt, linkedAccount, cancellationToken);
 
-            return true;
+        private async Task<bool> CompleteLinkCardAsync(
+    PaymentGatewayTransaction pgt,
+    GatewayWebhookEvent webhookEvent,
+    CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(webhookEvent.CardToken))
+            {
+                return false;
+            }
+
+            try
+            {
+                pgt.Status = PaymentGatewayTransactionStatus.Succeeded;
+                pgt.CompletedAt = DateTime.UtcNow;
+                pgt.ProviderTransactionId = webhookEvent.ProviderTransactionId;
+                pgt.ProviderOrderId = webhookEvent.ProviderOrderId;
+
+                var bankAccount = new BankAccount
+                {
+                    UserId = pgt.UserId,
+                    DisplayName = BuildCardDisplayName(
+                        webhookEvent.CardSubType, webhookEvent.MaskedPan),
+                    MaskedNumber = webhookEvent.MaskedPan ?? "****",
+                    GatewayToken = webhookEvent.CardToken,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                await _unitOfWork.BankAccounts.AddAsync(bankAccount, cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                await NotifyLinkCardOutcomeAsync(pgt, bankAccount, cancellationToken);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in CompleteLinkCardAsync: {ex.Message}");
+                return false;
+            }
         }
 
         private async Task NotifyLinkCardOutcomeAsync(
@@ -472,9 +506,6 @@ namespace QuickPay.BLL.Services.Implementation
             BankAccount linkedAccount,
             CancellationToken cancellationToken)
         {
-            // Best-effort refund of the nominal verification charge - a
-            // network call, so it happens after the DB transaction commits
-            // and never blocks the card from being linked.
             var refundResult = await _provider.RefundAsync(
                 new GatewayRefundRequest
                 {
@@ -492,7 +523,6 @@ namespace QuickPay.BLL.Services.Implementation
                     : $"{linkedAccount.MaskedNumber} was linked, but the {pgt.Amount:N2} EGP verification refund failed and needs manual follow-up.",
                 cancellationToken);
         }
-
         private static string BuildCardDisplayName(string? cardSubType, string? maskedPan)
         {
             var brand = string.IsNullOrWhiteSpace(cardSubType) ? "Card" : cardSubType;

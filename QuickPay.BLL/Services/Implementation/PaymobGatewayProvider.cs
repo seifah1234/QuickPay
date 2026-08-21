@@ -41,6 +41,8 @@ namespace QuickPay.BLL.Services.Implementation
                         currency = "EGP",
                         payment_methods = new[] { _settings.IntegrationId },
                         special_reference = request.MerchantReference,
+                        notification_url = _settings.NotificationUrl,
+                        save_card = true,
                         billing_data = new
                         {
                             first_name = request.PayerFullName,
@@ -78,10 +80,6 @@ namespace QuickPay.BLL.Services.Implementation
                 return new GatewayChargeResult
                 {
                     IsSuccess = true,
-                    // Informational only - the service correlates webhooks
-                    // using its own MerchantReference (special_reference),
-                    // not this id, since it's echoed back reliably as
-                    // obj.order.merchant_order_id in the callback.
                     GatewayTransactionId = body.Id ?? request.MerchantReference,
                     CheckoutUrl =
                         $"{_settings.BaseUrl}/unifiedcheckout/?publicKey={_settings.PublicKey}&clientSecret={body.ClientSecret}"
@@ -113,13 +111,6 @@ namespace QuickPay.BLL.Services.Implementation
             {
                 var amountCents = (int)(request.Amount * 100);
 
-                // NOTE: unconfirmed against a live sandbox response - this
-                // reuses Paymob's classic void/refund endpoint with the
-                // Secret Key as bearer auth (same auth style the Intention
-                // API uses elsewhere in this class). Verify with a real
-                // test transaction before depending on this in production;
-                // Paymob may require a different refund route for
-                // Intention-API transactions specifically.
                 var httpRequest = new HttpRequestMessage(
                     HttpMethod.Post,
                     $"{_settings.BaseUrl}/api/acceptance/void_refund/refund")
@@ -162,12 +153,13 @@ namespace QuickPay.BLL.Services.Implementation
         }
 
         public bool VerifyWebhookSignature(
-            string rawBody,
-            IDictionary<string, string> query,
-            string receivedSignature)
+    string rawBody,
+    IDictionary<string, string> query,
+    string receivedSignature)
         {
             if (string.IsNullOrEmpty(receivedSignature))
             {
+                Console.WriteLine("No signature received");
                 return false;
             }
 
@@ -178,6 +170,7 @@ namespace QuickPay.BLL.Services.Implementation
 
                 if (!root.TryGetProperty("obj", out var obj))
                 {
+                    Console.WriteLine("Missing 'obj' in payload");
                     return false;
                 }
 
@@ -185,30 +178,49 @@ namespace QuickPay.BLL.Services.Implementation
                     ? typeEl.GetString()
                     : null;
 
-                var concatenated = type == "TOKEN"
-                    ? BuildTokenHmacString(obj)
-                    : BuildTransactionHmacString(obj);
+                Console.WriteLine($"Type: {type}");
 
-                var keyBytes = Encoding.UTF8.GetBytes(_settings.HmacSecret);
-                var messageBytes = Encoding.UTF8.GetBytes(concatenated);
+                if (type == "TRANSACTION")
+                {
+                    var concatenated = BuildTransactionHmacString(obj);
+                    return VerifyHmac(concatenated, receivedSignature);
+                }
+                else if (type == "TOKEN")
+                {
+                    var concatenated = BuildTokenHmacString(obj);
+                    return VerifyHmac(concatenated, receivedSignature);
+                }
 
-                using var hmac = new HMACSHA512(keyBytes);
-                var hash = hmac.ComputeHash(messageBytes);
-                var expectedSignature = Convert.ToHexString(hash).ToLowerInvariant();
-
-                return CryptographicOperations.FixedTimeEquals(
-                    Encoding.UTF8.GetBytes(expectedSignature),
-                    Encoding.UTF8.GetBytes(receivedSignature.ToLowerInvariant()));
+                return false;
             }
-            catch (JsonException)
+            catch (Exception ex)
             {
+                Console.WriteLine($"Error: {ex.Message}");
                 return false;
             }
         }
 
+        private bool VerifyHmac(string concatenated, string receivedSignature)
+        {
+            var keyBytes = Encoding.UTF8.GetBytes(_settings.HmacSecret);
+            var messageBytes = Encoding.UTF8.GetBytes(concatenated);
+
+            using var hmac = new HMACSHA512(keyBytes);
+            var hash = hmac.ComputeHash(messageBytes);
+            var expectedSignature = Convert.ToHexString(hash).ToLowerInvariant();
+
+            Console.WriteLine($"Concatenated: {concatenated}");
+            Console.WriteLine($"Expected: {expectedSignature}");
+            Console.WriteLine($"Received: {receivedSignature.ToLowerInvariant()}");
+
+            return CryptographicOperations.FixedTimeEquals(
+                Encoding.UTF8.GetBytes(expectedSignature),
+                Encoding.UTF8.GetBytes(receivedSignature.ToLowerInvariant()));
+        }
+
         public GatewayWebhookEvent ParseWebhookEvent(
-            string rawBody,
-            IDictionary<string, string> query)
+    string rawBody,
+    IDictionary<string, string> query)
         {
             using var doc = JsonDocument.Parse(rawBody);
             var root = doc.RootElement;
@@ -225,10 +237,6 @@ namespace QuickPay.BLL.Services.Implementation
 
             if (type == "TOKEN")
             {
-                // Card-saving callback - fired separately from the payment
-                // callback, only when the integration has "Save Card"
-                // enabled. This is the ONLY place the reusable card token,
-                // masked PAN and card brand actually show up.
                 return new GatewayWebhookEvent
                 {
                     EventType = GatewayWebhookEventType.CardToken,
@@ -240,7 +248,6 @@ namespace QuickPay.BLL.Services.Implementation
                 };
             }
 
-            // Default: TRANSACTION callback (payment success/failure).
             var merchantReference =
                 GetNestedRawOrNull(obj, "order", "merchant_order_id") ??
                 string.Empty;
@@ -254,6 +261,10 @@ namespace QuickPay.BLL.Services.Implementation
                 ? cents
                 : 0L;
 
+            var sourcePan = GetNestedRawOrNull(obj, "source_data", "pan");
+            var sourceSubType = GetNestedRawOrNull(obj, "source_data", "sub_type");
+            var sourceType = GetNestedRawOrNull(obj, "source_data", "type");
+
             return new GatewayWebhookEvent
             {
                 EventType = GatewayWebhookEventType.Transaction,
@@ -261,12 +272,14 @@ namespace QuickPay.BLL.Services.Implementation
                 ProviderOrderId = GetNestedRawOrNull(obj, "order", "id"),
                 ProviderTransactionId = GetRawOrNull(obj, "id"),
                 IsSuccessful = isSuccessful,
-                Amount = amountCents / 100m
+                Amount = amountCents / 100m,
+
+                MaskedPan = sourcePan != null ? $"•••• {sourcePan}" : null,
+                CardSubType = sourceSubType,
+                CardToken = null
             };
         }
 
-        // Field order is fixed by Paymob's docs - do not reorder.
-        // https://developers.paymob.com/paymob-docs/developers/webhook-callbacks-and-hmac/hmac
         private static string BuildTransactionHmacString(JsonElement obj)
         {
             return string.Concat(
@@ -292,8 +305,7 @@ namespace QuickPay.BLL.Services.Implementation
                 GetRaw(obj, "success"));
         }
 
-        // Card-token (TOKEN) callback fields, taken in lexicographical
-        // (alphabetical) key order per Paymob's docs.
+
         private static string BuildTokenHmacString(JsonElement obj)
         {
             return string.Concat(
@@ -304,7 +316,8 @@ namespace QuickPay.BLL.Services.Implementation
                 GetRaw(obj, "masked_pan"),
                 GetRaw(obj, "merchant_id"),
                 GetRaw(obj, "order_id"),
-                GetRaw(obj, "token"));
+                GetRaw(obj, "token")
+            );
         }
 
         private static string GetRaw(JsonElement obj, string propertyName)

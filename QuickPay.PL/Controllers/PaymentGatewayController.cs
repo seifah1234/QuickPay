@@ -148,7 +148,7 @@ namespace QuickPay.PL.Controllers
         [AllowAnonymous]
         [Route("api/payment-gateway/webhook")]
         public async Task<IActionResult> Webhook(
-            CancellationToken cancellationToken)
+    CancellationToken cancellationToken)
         {
             using var reader = new StreamReader(Request.Body);
             var rawBody = await reader.ReadToEndAsync(cancellationToken);
@@ -156,15 +156,80 @@ namespace QuickPay.PL.Controllers
             var query = Request.Query.ToDictionary(
                 q => q.Key, q => q.Value.ToString());
 
-            var signature =
-                Request.Query["hmac"].FirstOrDefault() ??
-                Request.Headers["X-Gateway-Signature"].FirstOrDefault() ??
-                string.Empty;
+            var signature = query.ContainsKey("hmac")
+                ? query["hmac"]
+                : Request.Headers["X-HMAC-SHA512"].FirstOrDefault() ?? string.Empty;
+
+            Console.WriteLine($"Webhook received at {DateTime.UtcNow}");
+            Console.WriteLine($"Query params: {string.Join(", ", query.Select(kvp => $"{kvp.Key}={kvp.Value}"))}");
+            Console.WriteLine($"Signature: {signature}");
 
             var processed = await _gatewayService.HandleWebhookAsync(
                 rawBody, query, signature, cancellationToken);
 
-            return Ok(new { received = true, processed });
+            if (!processed)
+            {
+                Console.WriteLine("Webhook processing FAILED - returning BadRequest for retry");
+                return BadRequest(new { received = true, processed = false });
+            }
+
+            Console.WriteLine("Webhook processed OK");
+            return Ok(new { received = true, processed = true });
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [Route("api/payment-gateway/webhook/transaction")]
+        public async Task<IActionResult> TransactionWebhook(
+    CancellationToken cancellationToken)
+        {
+            using var reader = new StreamReader(Request.Body);
+            var rawBody = await reader.ReadToEndAsync();
+
+            var query = Request.Query.ToDictionary(
+                kvp => kvp.Key, kvp => kvp.Value.ToString());
+
+            var signature = query.ContainsKey("hmac")
+                ? query["hmac"]
+                : Request.Headers["X-HMAC-SHA512"].FirstOrDefault() ?? string.Empty;
+
+            Console.WriteLine($"Query params: {string.Join(", ", query.Select(kvp => $"{kvp.Key}={kvp.Value}"))}");
+            Console.WriteLine($"Signature from query/header: {signature}");
+
+            var result = await _gatewayService.HandleWebhookAsync(
+                rawBody, query, signature, cancellationToken);
+
+            if (!result)
+            {
+                return BadRequest();
+            }
+
+            return Ok();
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [Route("api/payment-gateway/webhook/token")]
+        public async Task<IActionResult> TokenWebhook(
+            CancellationToken cancellationToken)
+        {
+            using var reader = new StreamReader(Request.Body);
+            var rawBody = await reader.ReadToEndAsync();
+
+            var query = Request.Query.ToDictionary(
+                kvp => kvp.Key, kvp => kvp.Value.ToString());
+
+            var signature = Request.Headers["X-HMAC-SHA512"].FirstOrDefault();
+
+            var result = await _gatewayService.HandleWebhookAsync(
+                rawBody, query, signature, cancellationToken);
+
+            if (!result)
+            {
+                return BadRequest();
+            }
+
+            return Ok();
         }
 
         private static string FakePaymentGatewaySignature(string rawBody)
