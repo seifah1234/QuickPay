@@ -14,7 +14,11 @@ namespace QuickPay.BLL.Services.Implementation
             GatewayChargeRequest request,
             CancellationToken cancellationToken = default)
         {
-            var gatewayTransactionId = $"FAKE-{Guid.NewGuid():N}";
+            // Use the caller's own merchant reference as the correlation id,
+            // same as the real Paymob provider does (via special_reference /
+            // order.merchant_order_id) - keeps both providers' webhook
+            // matching logic identical.
+            var gatewayTransactionId = request.MerchantReference;
 
             var result = new GatewayChargeResult
             {
@@ -69,10 +73,17 @@ namespace QuickPay.BLL.Services.Implementation
 
             return new GatewayWebhookEvent
             {
+                EventType = GatewayWebhookEventType.Transaction,
                 GatewayTransactionId = payload.GatewayTransactionId,
                 ProviderTransactionId = payload.GatewayTransactionId,
+                ProviderOrderId = payload.GatewayTransactionId,
                 IsSuccessful = payload.IsSuccessful,
                 Amount = payload.Amount,
+                // The fake gateway simulates the whole flow in one webhook
+                // call (no separate TOKEN callback), so card fields are
+                // attached directly to this Transaction event. The service
+                // layer knows to complete LinkCard immediately when it sees
+                // these already populated.
                 CardToken = payload.IsSuccessful
                     ? $"FAKE-CARD-TOKEN-{payload.GatewayTransactionId}"
                     : null,

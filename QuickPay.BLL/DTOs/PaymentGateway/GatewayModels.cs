@@ -50,8 +50,22 @@
         public string? ErrorMessage { get; set; }
     }
 
+    // Paymob sends two structurally different callbacks: a TRANSACTION
+    // callback for payment success/failure, and (only when card-saving is
+    // enabled) a separate TOKEN callback carrying the reusable card token.
+    // They arrive as two different HTTP requests and use different HMAC
+    // field orders - see PaymobGatewayProvider.
+    public enum GatewayWebhookEventType
+    {
+        Transaction,
+        CardToken
+    }
+
     public class GatewayWebhookEvent
     {
+        public GatewayWebhookEventType EventType { get; set; } =
+            GatewayWebhookEventType.Transaction;
+
         public string GatewayTransactionId { get; set; } = string.Empty;
 
         public bool IsSuccessful { get; set; }
@@ -59,13 +73,16 @@
         public decimal Amount { get; set; }
 
         // Paymob's own transaction id (distinct from GatewayTransactionId,
-        // which we set to the Order id at charge time so we can correlate
-        // the webhook back to the pending PaymentGatewayTransaction before
-        // the real transaction id exists). Needed for refund/void calls.
+        // which is our own merchant reference). Needed for refund/void calls.
         public string? ProviderTransactionId { get; set; }
 
-        // Populated only when the integration has card-saving enabled and
-        // the transaction produced a reusable token (see LinkCard flow).
+        // Paymob's own numeric order id. Present on TRANSACTION callbacks
+        // (obj.order.id) and on TOKEN callbacks (obj.order_id) - this is
+        // what lets us match a later TOKEN callback back to the row created
+        // when the TRANSACTION callback first arrived.
+        public string? ProviderOrderId { get; set; }
+
+        // Populated only on a TOKEN callback (see EventType above).
         public string? CardToken { get; set; }
 
         public string? MaskedPan { get; set; }

@@ -12,6 +12,10 @@ namespace QuickPay.DAL.Repositries.Interfaces
             string gatewayTransactionId,
             CancellationToken cancellationToken = default);
 
+        Task<PaymentGatewayTransaction?> GetByProviderOrderIdAsync(
+            string providerOrderId,
+            CancellationToken cancellationToken = default);
+
         Task<PaymentGatewayTransaction?> GetByIdAsync(
             int id,
             CancellationToken cancellationToken = default);

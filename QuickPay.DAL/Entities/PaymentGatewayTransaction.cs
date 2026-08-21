@@ -22,6 +22,12 @@ namespace QuickPay.DAL.Entities
 
         public string? ProviderTransactionId { get; set; }
 
+        // Paymob's numeric order id, captured from the TRANSACTION callback.
+        // Needed because the card-saving token arrives in a SEPARATE "TOKEN"
+        // callback that only carries this order id (not our merchant
+        // reference), so this is how we match it back to this row.
+        public string? ProviderOrderId { get; set; }
+
         public decimal Amount { get; set; }
 
         public PaymentGatewayTransactionStatus Status { get; set; }
