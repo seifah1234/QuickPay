@@ -3,6 +3,7 @@
     public enum PaymentGatewayDirection
     {
         Deposit,
-        Withdraw
+        Withdraw,
+        LinkCard
     }
 }

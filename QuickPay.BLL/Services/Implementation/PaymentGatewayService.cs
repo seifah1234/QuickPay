@@ -12,15 +12,20 @@ namespace QuickPay.BLL.Services.Implementation
         private readonly IUnitOfWork _unitOfWork;
         private readonly IPaymentGatewayProvider _provider;
         private readonly INotificationService _notificationService;
+        private readonly ILinkedAccountsService _linkedAccountsService;
+
+        private const decimal LinkCardVerificationAmount = 1.00m;
 
         public PaymentGatewayService(
             IUnitOfWork unitOfWork,
             IPaymentGatewayProvider provider,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            ILinkedAccountsService linkedAccountsService)
         {
             _unitOfWork = unitOfWork;
             _provider = provider;
             _notificationService = notificationService;
+            _linkedAccountsService = linkedAccountsService;
         }
 
         public async Task<GatewayInitiationResultDto> InitiateDepositAsync(
@@ -173,6 +178,60 @@ namespace QuickPay.BLL.Services.Implementation
             };
         }
 
+        public async Task<GatewayInitiationResultDto> InitiateLinkCardAsync(
+            int currentUserId,
+            CancellationToken cancellationToken = default)
+        {
+            var user = await _unitOfWork.Users.GetByIdAsync(
+                currentUserId, cancellationToken);
+
+            if (user is null)
+            {
+                return Fail("Account not found.");
+            }
+
+            var chargeResult = await _provider.InitiateChargeAsync(
+                new DTOs.PaymentGateway.GatewayChargeRequest
+                {
+                    UserId = currentUserId,
+                    Amount = LinkCardVerificationAmount,
+                    MerchantReference = $"LINK-{currentUserId}-{DateTime.UtcNow.Ticks}",
+                    PayerFullName = user.UserName,
+                    PayerEmail = user.Email,
+                    PayerPhoneNumber = user.PhoneNumber
+                },
+                cancellationToken);
+
+            if (!chargeResult.IsSuccess)
+            {
+                return Fail(
+                    chargeResult.ErrorMessage ??
+                    "Could not start card verification. Please try again.");
+            }
+
+            var pgt = new PaymentGatewayTransaction
+            {
+                UserId = currentUserId,
+                WalletId = null,
+                Direction = PaymentGatewayDirection.LinkCard,
+                GatewayTransactionId = chargeResult.GatewayTransactionId,
+                Amount = LinkCardVerificationAmount,
+                Status = PaymentGatewayTransactionStatus.Pending
+            };
+
+            await _unitOfWork.PaymentGatewayTransactions.AddAsync(
+                pgt, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return new GatewayInitiationResultDto
+            {
+                IsSuccess = true,
+                Message =
+                    $"Redirecting to verify your card with a {LinkCardVerificationAmount:N2} EGP charge (refunded automatically).",
+                CheckoutUrl = chargeResult.CheckoutUrl
+            };
+        }
+
         public async Task<bool> HandleWebhookAsync(
             string rawBody,
             IDictionary<string, string> query,
@@ -200,6 +259,8 @@ namespace QuickPay.BLL.Services.Implementation
                 return true;
             }
 
+            BankAccount? linkedAccount = null;
+
             await _unitOfWork.BeginTransactionAsync(cancellationToken);
 
             try
@@ -208,38 +269,68 @@ namespace QuickPay.BLL.Services.Implementation
                     ? PaymentGatewayTransactionStatus.Succeeded
                     : PaymentGatewayTransactionStatus.Failed;
                 pgt.CompletedAt = DateTime.UtcNow;
+                pgt.ProviderTransactionId = webhookEvent.ProviderTransactionId;
 
                 if (webhookEvent.IsSuccessful)
                 {
-                    var wallet = await _unitOfWork.Wallets.GetByIdAsync(
-                        pgt.WalletId, cancellationToken);
-
-                    if (wallet is null)
+                    if (pgt.Direction == PaymentGatewayDirection.LinkCard)
                     {
-                        throw new InvalidOperationException(
-                            $"Wallet {pgt.WalletId} referenced by gateway transaction {pgt.Id} no longer exists.");
+                        if (string.IsNullOrWhiteSpace(webhookEvent.CardToken))
+                        {
+                            throw new InvalidOperationException(
+                                "Gateway did not return a reusable card token - make sure 'Save Card' is enabled on this Paymob integration.");
+                        }
+
+                        var linkedAccountDto = await _linkedAccountsService.LinkAsync(
+                            new DTOs.PaymentGateway.LinkBankAccountRequestDto
+                            {
+                                CurrentUserId = pgt.UserId,
+                                DisplayName = BuildCardDisplayName(
+                                    webhookEvent.CardSubType, webhookEvent.MaskedPan),
+                                MaskedNumber = webhookEvent.MaskedPan ?? "****",
+                                GatewayToken = webhookEvent.CardToken
+                            },
+                            cancellationToken);
+
+                        linkedAccount = new BankAccount
+                        {
+                            Id = linkedAccountDto.Id,
+                            DisplayName = linkedAccountDto.DisplayName,
+                            MaskedNumber = linkedAccountDto.MaskedNumber
+                        };
                     }
-
-                    wallet.Balance += pgt.Direction == PaymentGatewayDirection.Deposit
-                        ? pgt.Amount
-                        : -pgt.Amount;
-                    wallet.UpdatedAt = DateTime.UtcNow;
-
-                    var ledgerTransaction = new Transaction
+                    else
                     {
-                        FromAccountId = wallet.Id,
-                        ToAccountId = wallet.Id,
-                        Amount = pgt.Amount,
-                        Type = pgt.Direction == PaymentGatewayDirection.Deposit
-                            ? TransactionType.Deposit
-                            : TransactionType.Withdraw,
-                        Status = TransactionStatus.Completed,
-                        PaymentGatewayTransactionId = pgt.Id,
-                        CreatedAt = DateTime.UtcNow
-                    };
+                        var wallet = await _unitOfWork.Wallets.GetByIdAsync(
+                            pgt.WalletId!.Value, cancellationToken);
 
-                    await _unitOfWork.Transactions.AddAsync(
-                        ledgerTransaction, cancellationToken);
+                        if (wallet is null)
+                        {
+                            throw new InvalidOperationException(
+                                $"Wallet {pgt.WalletId} referenced by gateway transaction {pgt.Id} no longer exists.");
+                        }
+
+                        wallet.Balance += pgt.Direction == PaymentGatewayDirection.Deposit
+                            ? pgt.Amount
+                            : -pgt.Amount;
+                        wallet.UpdatedAt = DateTime.UtcNow;
+
+                        var ledgerTransaction = new Transaction
+                        {
+                            FromAccountId = wallet.Id,
+                            ToAccountId = wallet.Id,
+                            Amount = pgt.Amount,
+                            Type = pgt.Direction == PaymentGatewayDirection.Deposit
+                                ? TransactionType.Deposit
+                                : TransactionType.Withdraw,
+                            Status = TransactionStatus.Completed,
+                            PaymentGatewayTransactionId = pgt.Id,
+                            CreatedAt = DateTime.UtcNow
+                        };
+
+                        await _unitOfWork.Transactions.AddAsync(
+                            ledgerTransaction, cancellationToken);
+                    }
                 }
 
                 try
@@ -260,6 +351,14 @@ namespace QuickPay.BLL.Services.Implementation
                 throw;
             }
 
+            if (pgt.Direction == PaymentGatewayDirection.LinkCard)
+            {
+                //await NotifyLinkCardOutcomeAsync(
+                //    pgt, webhookEvent, linkedAccount, cancellationToken);
+
+                return true;
+            }
+
             await _notificationService.NotifyAsync(
                 pgt.UserId,
                 type: pgt.Direction == PaymentGatewayDirection.Deposit
@@ -271,6 +370,55 @@ namespace QuickPay.BLL.Services.Implementation
                 cancellationToken);
 
             return true;
+        }
+
+        /*private async Task NotifyLinkCardOutcomeAsync(
+            PaymentGatewayTransaction pgt,
+            DTOs.PaymentGateway.GatewayWebhookEvent webhookEvent,
+            BankAccount? linkedAccount,
+            CancellationToken cancellationToken)
+        {
+            if (!webhookEvent.IsSuccessful)
+            {
+                await _notificationService.NotifyAsync(
+                    pgt.UserId,
+                    type: "CardLinkFailed",
+                    message: "We couldn't verify your card. Nothing was charged.",
+                    cancellationToken);
+
+                return;
+            }
+
+            // Best-effort refund of the nominal verification charge - this is
+            // a network call, so it happens after the DB transaction commits
+            // and never blocks the card from being linked.
+            var refundResult = await _provider.RefundAsync(
+                new DTOs.PaymentGateway.GatewayRefundRequest
+                {
+                    GatewayTransactionId =
+                        pgt.ProviderTransactionId ?? pgt.GatewayTransactionId,
+                    Amount = pgt.Amount
+                },
+                cancellationToken);
+
+            var cardLabel = linkedAccount?.MaskedNumber ?? "your card";
+
+            await _notificationService.NotifyAsync(
+                pgt.UserId,
+                type: "CardLinked",
+                message: refundResult.IsSuccess
+                    ? $"{cardLabel} was linked. The {pgt.Amount:N2} EGP verification charge was refunded."
+                    : $"{cardLabel} was linked, but the {pgt.Amount:N2} EGP verification refund failed and needs manual follow-up.",
+                cancellationToken);
+        }*/
+
+        private static string BuildCardDisplayName(string? cardSubType, string? maskedPan)
+        {
+            var brand = string.IsNullOrWhiteSpace(cardSubType) ? "Card" : cardSubType;
+
+            return string.IsNullOrWhiteSpace(maskedPan)
+                ? brand
+                : $"{brand} •••• {maskedPan}";
         }
 
         private static GatewayInitiationResultDto Fail(string message) => new()

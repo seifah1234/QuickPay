@@ -12,6 +12,7 @@ namespace QuickPay.BLL.Services.Interfaces
             GatewayPayoutRequest request,
             CancellationToken cancellationToken = default);
 
+
         bool VerifyWebhookSignature(
             string rawBody,
             IDictionary<string, string> query,

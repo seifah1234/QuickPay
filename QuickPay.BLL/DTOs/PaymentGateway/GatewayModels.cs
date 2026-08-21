@@ -57,5 +57,33 @@
         public bool IsSuccessful { get; set; }
 
         public decimal Amount { get; set; }
+
+        // Paymob's own transaction id (distinct from GatewayTransactionId,
+        // which we set to the Order id at charge time so we can correlate
+        // the webhook back to the pending PaymentGatewayTransaction before
+        // the real transaction id exists). Needed for refund/void calls.
+        public string? ProviderTransactionId { get; set; }
+
+        // Populated only when the integration has card-saving enabled and
+        // the transaction produced a reusable token (see LinkCard flow).
+        public string? CardToken { get; set; }
+
+        public string? MaskedPan { get; set; }
+
+        public string? CardSubType { get; set; }
+    }
+
+    public class GatewayRefundRequest
+    {
+        public string GatewayTransactionId { get; set; } = string.Empty;
+
+        public decimal Amount { get; set; }
+    }
+
+    public class GatewayRefundResult
+    {
+        public bool IsSuccess { get; set; }
+
+        public string? ErrorMessage { get; set; }
     }
 }

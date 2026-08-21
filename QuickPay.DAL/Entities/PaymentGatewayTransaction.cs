@@ -8,9 +8,9 @@ namespace QuickPay.DAL.Entities
 
         public User User { get; set; } = null!;
 
-        public int WalletId { get; set; }
+        public int? WalletId { get; set; }
 
-        public Wallet Wallet { get; set; } = null!;
+        public Wallet? Wallet { get; set; }
 
         public PaymentGatewayDirection Direction { get; set; }
 
@@ -19,6 +19,8 @@ namespace QuickPay.DAL.Entities
         public BankAccount? BankAccount { get; set; }
 
         public string GatewayTransactionId { get; set; } = null!;
+
+        public string? ProviderTransactionId { get; set; }
 
         public decimal Amount { get; set; }
 

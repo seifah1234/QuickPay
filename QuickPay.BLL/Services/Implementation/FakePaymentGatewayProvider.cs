@@ -39,6 +39,15 @@ namespace QuickPay.BLL.Services.Implementation
             return Task.FromResult(result);
         }
 
+        public Task<GatewayRefundResult> RefundAsync(
+            GatewayRefundRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            // Simulated gateway - nothing was really charged, so "refunding"
+            // always succeeds instantly.
+            return Task.FromResult(new GatewayRefundResult { IsSuccess = true });
+        }
+
         public bool VerifyWebhookSignature(
             string rawBody,
             IDictionary<string, string> query,
@@ -61,8 +70,14 @@ namespace QuickPay.BLL.Services.Implementation
             return new GatewayWebhookEvent
             {
                 GatewayTransactionId = payload.GatewayTransactionId,
+                ProviderTransactionId = payload.GatewayTransactionId,
                 IsSuccessful = payload.IsSuccessful,
-                Amount = payload.Amount
+                Amount = payload.Amount,
+                CardToken = payload.IsSuccessful
+                    ? $"FAKE-CARD-TOKEN-{payload.GatewayTransactionId}"
+                    : null,
+                MaskedPan = payload.IsSuccessful ? "4242" : null,
+                CardSubType = payload.IsSuccessful ? "Visa" : null
             };
         }
 

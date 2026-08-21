@@ -41,36 +41,20 @@
 
             <div class="card shadow-sm border-0">
                 <div class="card-body p-4">
-                    <h5 class="mb-3">Link a New Account</h5>
+                    <h5 class="mb-3">Link a New Card</h5>
 
-                    <div class="alert alert-warning small">
-                        Placeholder form - a real card number/CVV should
-                        never be typed here. This stands in for the
-                        gateway's own tokenization widget until it's wired in.
-                    </div>
+                    <p class="text-muted small">
+                        You'll be redirected to a secure checkout to verify your
+                        card with a small refundable charge (1.00 EGP). We never
+                        see or store your card number - only the token the
+                        gateway gives back.
+                    </p>
 
-                    <form asp-action="Link" asp-controller="LinkedAccounts" method="post">
+                    <form asp-action="LinkStart" asp-controller="LinkedAccounts" method="post">
                         @Html.AntiForgeryToken()
-
-                        <div class="mb-3">
-                            <label class="form-label">Display Name</label>
-                            <input type="text" name="displayName" class="form-control" placeholder="My Visa Card" required />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Masked Number</label>
-                            <input type="text" name="maskedNumber" class="form-control" placeholder="**** 4242" required />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Gateway Token</label>
-                            <input type="text" name="gatewayToken" class="form-control" placeholder="Returned by the gateway's tokenization step" required />
-                        </div>
-
                         <button type="submit" class="btn btn-primary w-100">
-                            Link Account
+                            Link New Card
                         </button>
-
                     </form>
                 </div>
             </div>

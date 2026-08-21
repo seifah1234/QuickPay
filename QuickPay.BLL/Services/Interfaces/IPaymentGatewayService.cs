@@ -12,6 +12,10 @@ namespace QuickPay.BLL.Services.Interfaces
             InitiateWithdrawRequestDto request,
             CancellationToken cancellationToken = default);
 
+        Task<GatewayInitiationResultDto> InitiateLinkCardAsync(
+            int currentUserId,
+            CancellationToken cancellationToken = default);
+
         Task<bool> HandleWebhookAsync(
             string rawBody,
             IDictionary<string, string> query,

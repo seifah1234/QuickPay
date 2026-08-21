@@ -18,6 +18,9 @@ namespace QuickPay.DAL.Configurations
                 .HasMaxLength(200)
                 .IsRequired();
 
+            builder.Property(x => x.ProviderTransactionId)
+                .HasMaxLength(200);
+
             builder.Property(x => x.Amount)
                 .HasPrecision(18, 2)
                 .IsRequired();

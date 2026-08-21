@@ -7,13 +7,16 @@ namespace QuickPay.PL.Controllers
     public class LinkedAccountsController : Controller
     {
         private readonly ILinkedAccountsService _linkedAccountsService;
+        private readonly IPaymentGatewayService _gatewayService;
         private readonly ICurrentUserService _currentUserService;
 
         public LinkedAccountsController(
             ILinkedAccountsService linkedAccountsService,
+            IPaymentGatewayService gatewayService,
             ICurrentUserService currentUserService)
         {
             _linkedAccountsService = linkedAccountsService;
+            _gatewayService = gatewayService;
             _currentUserService = currentUserService;
         }
 
@@ -29,34 +32,21 @@ namespace QuickPay.PL.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Link(
-            string displayName,
-            string maskedNumber,
-            string gatewayToken,
+        public async Task<IActionResult> LinkStart(
             CancellationToken cancellationToken)
         {
             var userId = _currentUserService.GetCurrentUserId();
 
-            try
-            {
-                await _linkedAccountsService.LinkAsync(
-                    new LinkBankAccountRequestDto
-                    {
-                        CurrentUserId = userId,
-                        DisplayName = displayName,
-                        MaskedNumber = maskedNumber,
-                        GatewayToken = gatewayToken
-                    },
-                    cancellationToken);
+            var result = await _gatewayService.InitiateLinkCardAsync(
+                userId, cancellationToken);
 
-                TempData["SuccessMessage"] = "Account linked.";
-            }
-            catch (ArgumentException ex)
+            if (!result.IsSuccess)
             {
-                TempData["ErrorMessage"] = ex.Message;
+                TempData["ErrorMessage"] = result.Message;
+                return RedirectToAction(nameof(Index));
             }
 
-            return RedirectToAction(nameof(Index));
+            return Redirect(result.CheckoutUrl!);
         }
 
         [HttpPost]
