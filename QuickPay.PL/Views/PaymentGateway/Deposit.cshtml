@@ -10,9 +10,17 @@
 
                     <h2 class="mb-4">Deposit</h2>
 
+                    @if (TempData["SuccessMessage"] is not null)
+                    {
+                        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+                    }
                     @if (TempData["ErrorMessage"] is not null)
                     {
                         <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+                    }
+
+                    @{
+                        var linkedAccounts = (IEnumerable<dynamic>)ViewBag.LinkedAccounts;
                     }
 
                     <form asp-action="Deposit" asp-controller="PaymentGateway" method="post">
@@ -26,6 +34,25 @@
                                     <option value="@account.Id">@account.DisplayName - @account.Balance.ToString("N2") @account.Currency</option>
                                 }
                             </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Pay with</label>
+                            <select name="bankAccountId" class="form-select">
+                                <option value="">A new card (redirects to checkout)</option>
+                                @foreach (var account in linkedAccounts)
+                                {
+                                    <option value="@account.Id">@account.DisplayName (@account.MaskedNumber)</option>
+                                }
+                            </select>
+                            @if (!linkedAccounts.Any())
+                            {
+                                <small class="text-muted">
+                                    No saved cards yet -
+                                    <a asp-controller="LinkedAccounts" asp-action="Index">link one</a>
+                                    for one-click deposits next time.
+                                </small>
+                            }
                         </div>
 
                         <div class="mb-4">

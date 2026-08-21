@@ -28,6 +28,11 @@ namespace QuickPay.BLL.Services.Implementation
             GatewayChargeRequest request,
             CancellationToken cancellationToken = default)
         {
+            if (!string.IsNullOrWhiteSpace(request.SavedCardToken))
+            {
+                return await ChargeWithSavedTokenAsync(request, cancellationToken);
+            }
+
             try
             {
                 var amountCents = (int)(request.Amount * 100);
@@ -93,6 +98,236 @@ namespace QuickPay.BLL.Services.Implementation
                     ErrorMessage = ex.Message
                 };
             }
+        }
+
+        /// <summary>
+        /// Charges an existing saved card token directly - no new card
+        /// entry, no redirect to Unified Checkout, using the classic
+        /// (pre-Intention) Accept flow, which is the only flow Paymob
+        /// documents for server-initiated token charges as of this
+        /// writing: Auth token -> Order -> Payment Key -> Pay with
+        /// source.subtype "TOKEN". The transaction result still arrives
+        /// asynchronously via the normal TRANSACTION webhook, same as
+        /// the Intention flow - this method only starts the charge, it
+        /// does not itself confirm or touch any balance (that stays the
+        /// webhook's job, for the same idempotency reasons as everywhere
+        /// else in this file).
+        ///
+        /// If the issuing bank requires a 3-D Secure step-up even for a
+        /// saved token, Paymob's pay response includes a redirect URL -
+        /// handled below by surfacing it as CheckoutUrl so the caller
+        /// can send the user there; otherwise CheckoutUrl is null and
+        /// the deposit simply completes in the background.
+        /// </summary>
+        private async Task<GatewayChargeResult> ChargeWithSavedTokenAsync(
+            GatewayChargeRequest request,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var amountCents = (int)(request.Amount * 100);
+
+                var authToken = await GetClassicAuthTokenAsync(cancellationToken);
+
+                var orderId = await CreateClassicOrderAsync(
+                    authToken, amountCents, request.MerchantReference, cancellationToken);
+
+                var paymentKeyToken = await GetClassicPaymentKeyAsync(
+                    authToken, orderId, amountCents, request, cancellationToken);
+
+                var payHttpRequest = new HttpRequestMessage(
+                    HttpMethod.Post, $"{_settings.BaseUrl}/api/acceptance/payments/pay")
+                {
+                    Content = JsonContent.Create(new
+                    {
+                        source = new
+                        {
+                            identifier = request.SavedCardToken,
+                            subtype = "TOKEN"
+                        },
+                        payment_token = paymentKeyToken
+                    })
+                };
+
+                var payResponse = await _httpClient.SendAsync(
+                    payHttpRequest, cancellationToken);
+
+                var payRawBody = await payResponse.Content
+                    .ReadAsStringAsync(cancellationToken);
+
+                Console.WriteLine($"Pay-with-token response ({(int)payResponse.StatusCode}): {payRawBody}");
+
+                if (!payResponse.IsSuccessStatusCode)
+                {
+                    return new GatewayChargeResult
+                    {
+                        IsSuccess = false,
+                        ErrorMessage = $"Paymob pay-with-token failed ({(int)payResponse.StatusCode}): {payRawBody}"
+                    };
+                }
+
+                using var payDoc = JsonDocument.Parse(payRawBody);
+                var payRoot = payDoc.RootElement;
+
+                // Some issuers require a 3-D Secure challenge even for a
+                // saved token - if Paymob wants us to redirect, it comes
+                // back as one of these fields depending on integration
+                // type. Check the raw response if this ever comes back
+                // null but a 3DS prompt was expected on the Paymob
+                // dashboard's transaction log.
+                var redirectUrl =
+                    GetStringOrNull(payRoot, "redirect_url") ??
+                    GetStringOrNull(payRoot, "iframe_redirection_url") ??
+                    GetStringOrNull(payRoot, "redirection_url");
+
+                var pending =
+                    payRoot.TryGetProperty("pending", out var pendingEl) &&
+                    pendingEl.ValueKind == JsonValueKind.True;
+
+                var success =
+                    payRoot.TryGetProperty("success", out var successEl) &&
+                    successEl.ValueKind == JsonValueKind.True;
+
+                // "Initiation failed" (bad token, card declined
+                // outright, etc.) is different from "pending, waiting on
+                // 3DS or the async webhook" - only the former is a hard
+                // failure here.
+                if (!success && !pending && redirectUrl is null)
+                {
+                    var declineReason = GetStringOrNull(payRoot, "data")
+                        ?? "The saved card declined this charge.";
+
+                    return new GatewayChargeResult
+                    {
+                        IsSuccess = false,
+                        ErrorMessage = declineReason
+                    };
+                }
+
+                return new GatewayChargeResult
+                {
+                    IsSuccess = true,
+                    GatewayTransactionId = request.MerchantReference,
+                    CheckoutUrl = redirectUrl
+                };
+            }
+            catch (Exception ex)
+            {
+                return new GatewayChargeResult
+                {
+                    IsSuccess = false,
+                    ErrorMessage = ex.Message
+                };
+            }
+        }
+
+        private async Task<string> GetClassicAuthTokenAsync(
+            CancellationToken cancellationToken)
+        {
+            var response = await _httpClient.PostAsJsonAsync(
+                $"{_settings.BaseUrl}/api/auth/tokens",
+                new { api_key = _settings.ApiKey },
+                cancellationToken);
+
+            response.EnsureSuccessStatusCode();
+
+            var body = await response.Content
+                .ReadFromJsonAsync<AuthTokenResponse>(
+                    cancellationToken: cancellationToken);
+
+            return body?.Token
+                ?? throw new InvalidOperationException(
+                    "Paymob auth response had no token.");
+        }
+
+        private async Task<long> CreateClassicOrderAsync(
+            string authToken,
+            int amountCents,
+            string merchantReference,
+            CancellationToken cancellationToken)
+        {
+            var response = await _httpClient.PostAsJsonAsync(
+                $"{_settings.BaseUrl}/api/ecommerce/orders",
+                new
+                {
+                    auth_token = authToken,
+                    delivery_needed = false,
+                    amount_cents = amountCents,
+                    currency = "EGP",
+                    merchant_order_id = merchantReference,
+                    items = Array.Empty<object>()
+                },
+                cancellationToken);
+
+            response.EnsureSuccessStatusCode();
+
+            var body = await response.Content
+                .ReadFromJsonAsync<OrderResponse>(
+                    cancellationToken: cancellationToken);
+
+            return body?.Id
+                ?? throw new InvalidOperationException(
+                    "Paymob order response had no id.");
+        }
+
+        private async Task<string> GetClassicPaymentKeyAsync(
+            string authToken,
+            long orderId,
+            int amountCents,
+            GatewayChargeRequest request,
+            CancellationToken cancellationToken)
+        {
+            var response = await _httpClient.PostAsJsonAsync(
+                $"{_settings.BaseUrl}/api/acceptance/payment_keys",
+                new
+                {
+                    auth_token = authToken,
+                    amount_cents = amountCents,
+                    expiration = 3600,
+                    order_id = orderId,
+                    currency = "EGP",
+                    integration_id = _settings.IntegrationId,
+                    billing_data = new
+                    {
+                        first_name = request.PayerFullName,
+                        last_name = "N/A",
+                        email = request.PayerEmail,
+                        phone_number = request.PayerPhoneNumber,
+                        apartment = "NA",
+                        floor = "NA",
+                        street = "NA",
+                        building = "NA",
+                        city = "NA",
+                        country = "EG",
+                        state = "NA"
+                    }
+                },
+                cancellationToken);
+
+            response.EnsureSuccessStatusCode();
+
+            var body = await response.Content
+                .ReadFromJsonAsync<PaymentKeyResponse>(
+                    cancellationToken: cancellationToken);
+
+            return body?.Token
+                ?? throw new InvalidOperationException(
+                    "Paymob payment key response had no token.");
+        }
+
+        private static string? GetStringOrNull(JsonElement root, string propertyName)
+        {
+            if (!root.TryGetProperty(propertyName, out var el))
+            {
+                return null;
+            }
+
+            return el.ValueKind switch
+            {
+                JsonValueKind.String => el.GetString(),
+                JsonValueKind.Null or JsonValueKind.Undefined => null,
+                _ => el.GetRawText()
+            };
         }
 
         public Task<GatewayPayoutResult> InitiatePayoutAsync(
@@ -368,6 +603,24 @@ namespace QuickPay.BLL.Services.Implementation
 
             [JsonPropertyName("client_secret")]
             public string? ClientSecret { get; set; }
+        }
+
+        private class AuthTokenResponse
+        {
+            [JsonPropertyName("token")]
+            public string? Token { get; set; }
+        }
+
+        private class OrderResponse
+        {
+            [JsonPropertyName("id")]
+            public long Id { get; set; }
+        }
+
+        private class PaymentKeyResponse
+        {
+            [JsonPropertyName("token")]
+            public string? Token { get; set; }
         }
     }
 }

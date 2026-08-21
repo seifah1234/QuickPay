@@ -56,6 +56,27 @@ namespace QuickPay.BLL.Services.Implementation
                 return Fail("Account not found.");
             }
 
+            // Deposit-with-saved-card: verify the BankAccount is really
+            // this user's own before letting its token be charged - the
+            // same ownership check every other feature in this app makes
+            // before touching an account it didn't explicitly search for.
+            string? savedCardToken = null;
+
+            if (request.BankAccountId.HasValue)
+            {
+                var bankAccount = await _unitOfWork.BankAccounts.GetByIdAsync(
+                    request.BankAccountId.Value, cancellationToken);
+
+                if (bankAccount is null ||
+                    bankAccount.UserId != request.CurrentUserId ||
+                    !bankAccount.IsActive)
+                {
+                    return Fail("Linked account was not found.");
+                }
+
+                savedCardToken = bankAccount.GatewayToken;
+            }
+
             var merchantReference = $"DEP-{request.WalletId}-{DateTime.UtcNow.Ticks}";
 
             var chargeResult = await _provider.InitiateChargeAsync(
@@ -66,7 +87,8 @@ namespace QuickPay.BLL.Services.Implementation
                     MerchantReference = merchantReference,
                     PayerFullName = user.UserName,
                     PayerEmail = user.Email,
-                    PayerPhoneNumber = user.PhoneNumber
+                    PayerPhoneNumber = user.PhoneNumber,
+                    SavedCardToken = savedCardToken
                 },
                 cancellationToken);
 
@@ -94,7 +116,9 @@ namespace QuickPay.BLL.Services.Implementation
             return new GatewayInitiationResultDto
             {
                 IsSuccess = true,
-                Message = "Redirecting to complete your deposit.",
+                Message = chargeResult.CheckoutUrl is not null
+                    ? "Redirecting to complete your deposit."
+                    : "Deposit started with your saved card. You'll be notified once it's confirmed.",
                 CheckoutUrl = chargeResult.CheckoutUrl
             };
         }

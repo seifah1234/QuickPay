@@ -15,6 +15,14 @@
         public string PayerEmail { get; set; } = string.Empty;
 
         public string PayerPhoneNumber { get; set; } = string.Empty;
+
+        /// <summary>
+        /// When set, charges this saved card token directly (classic
+        /// Auth→Order→Payment Key→Pay flow) instead of creating a new
+        /// Intention and redirecting to Unified Checkout. Null means
+        /// "new card entry" (the existing Intention flow).
+        /// </summary>
+        public string? SavedCardToken { get; set; }
     }
 
     public class GatewayChargeResult

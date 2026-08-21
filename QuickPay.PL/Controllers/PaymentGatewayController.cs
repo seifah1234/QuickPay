@@ -30,6 +30,8 @@ namespace QuickPay.PL.Controllers
             var userId = _currentUserService.GetCurrentUserId();
             ViewBag.Accounts = await _financialAccountService
                 .GetMyAccountsAsync(userId, cancellationToken);
+            ViewBag.LinkedAccounts = await _linkedAccountsService
+                .GetMyLinkedAccountsAsync(userId, cancellationToken);
 
             return View();
         }
@@ -39,6 +41,7 @@ namespace QuickPay.PL.Controllers
         public async Task<IActionResult> Deposit(
             int walletId,
             decimal amount,
+            int? bankAccountId,
             CancellationToken cancellationToken)
         {
             var userId = _currentUserService.GetCurrentUserId();
@@ -48,7 +51,8 @@ namespace QuickPay.PL.Controllers
                 {
                     CurrentUserId = userId,
                     WalletId = walletId,
-                    Amount = amount
+                    Amount = amount,
+                    BankAccountId = bankAccountId
                 },
                 cancellationToken);
 
@@ -58,7 +62,18 @@ namespace QuickPay.PL.Controllers
                 return RedirectToAction(nameof(Deposit));
             }
 
-            return Redirect(result.CheckoutUrl!);
+            // A saved-card charge with no 3-D Secure step-up has no
+            // CheckoutUrl at all - it's already been sent to Paymob and
+            // is now waiting on the async webhook, same as any other
+            // pending gateway transaction. Only redirect when there's
+            // somewhere to redirect to.
+            if (result.CheckoutUrl is not null)
+            {
+                return Redirect(result.CheckoutUrl);
+            }
+
+            TempData["SuccessMessage"] = result.Message;
+            return RedirectToAction(nameof(Deposit));
         }
 
         [HttpGet]

@@ -7,6 +7,12 @@
         public int WalletId { get; set; }
 
         public decimal Amount { get; set; }
+
+        /// <summary>
+        /// Optional - when set, charges this linked BankAccount's saved
+        /// card directly instead of opening a new-card checkout page.
+        /// </summary>
+        public int? BankAccountId { get; set; }
     }
 
     public class InitiateWithdrawRequestDto
