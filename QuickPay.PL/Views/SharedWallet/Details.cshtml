@@ -1,0 +1,144 @@
+@using QuickPay.BLL.DTOs
+@using QuickPay.BLL.DTOs.SharedWallet
+@model SharedWalletDto
+
+@{
+    ViewData["Title"] = Model.Name;
+    var currentUserId = (int)ViewBag.CurrentUserId;
+    var history = (IEnumerable<TransactionHistoryDto>)ViewBag.History;
+    var isAdmin = Model.Members.Any(m => m.UserId == currentUserId && m.Role == "Admin");
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+
+            @if (TempData["SuccessMessage"] is not null)
+            {
+                <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+            }
+            @if (TempData["ErrorMessage"] is not null)
+            {
+                <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+            }
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h2 class="mb-1">@Model.Name</h2>
+                            <span class="badge @(Model.IsActive ? "bg-success" : "bg-secondary")">
+                                @(Model.IsActive ? "Active" : "Closed")
+                            </span>
+                        </div>
+                        <div class="fs-3">
+                            @Model.Balance.ToString("N2") <span class="text-muted fs-6">@Model.Currency</span>
+                        </div>
+                    </div>
+
+                    @if (isAdmin && Model.IsActive)
+                    {
+                        <hr />
+                        <form asp-action="Rename" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <input type="text" name="newName" value="@Model.Name" class="form-control d-inline w-auto" />
+                            <button type="submit" class="btn btn-secondary btn-sm">Rename</button>
+                        </form>
+
+                        <form asp-action="Close" method="post" class="d-inline"
+                              onsubmit="return confirm('Close this shared wallet? Balance must be zero.');">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <button type="submit" class="btn btn-outline-danger btn-sm">Close Wallet</button>
+                        </form>
+                    }
+
+                    <p class="text-muted small mt-3 mb-0">
+                        To move money in or out, use <a asp-controller="Transfer" asp-action="Index">Transfer</a> -
+                        this shared wallet shows up as a destination/source there like any other account.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h5 class="mb-3">Members</h5>
+
+                    <table class="table table-sm align-middle">
+                        <tbody>
+                            @foreach (var member in Model.Members)
+                            {
+                                <tr>
+                                    <td>@member.UserName</td>
+                                    <td><span class="badge bg-light text-dark">@member.Role</span></td>
+                                    <td class="text-muted small">joined @member.JoinedAt.ToString("MMM d, yyyy")</td>
+                                    <td class="text-end">
+                                        @if (isAdmin && member.UserId != currentUserId)
+                                        {
+                                            <form asp-action="RemoveMember" method="post" class="d-inline"
+                                                  onsubmit="return confirm('Remove this member?');">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@Model.Id" />
+                                                <input type="hidden" name="memberUserId" value="@member.UserId" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    @if (isAdmin && Model.IsActive)
+                    {
+                        <form asp-action="AddMember" method="post" class="d-flex gap-2 mt-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <input type="text" name="identifier" class="form-control" placeholder="Username, phone, or email" required />
+                            <button type="submit" class="btn btn-primary">Add Member</button>
+                        </form>
+                    }
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="mb-3">History</h5>
+
+                    @if (!history.Any())
+                    {
+                        <p class="text-muted mb-0">No activity yet.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Direction</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var entry in history)
+                                {
+                                    <tr>
+                                        <td>@entry.Type</td>
+                                        <td>@entry.Direction</td>
+                                        <td>@entry.Amount.ToString("N2")</td>
+                                        <td>@entry.Status</td>
+                                        <td class="text-muted small">@entry.CreatedAt.ToString("MMM d, yyyy HH:mm")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

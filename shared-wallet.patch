@@ -1,0 +1,1252 @@
+diff --git a/QuickPay.BLL/DTOs/SharedWallet/SharedWalletDtos.cs b/QuickPay.BLL/DTOs/SharedWallet/SharedWalletDtos.cs
+new file mode 100644
+index 0000000..3ca2a6e
+--- /dev/null
++++ b/QuickPay.BLL/DTOs/SharedWallet/SharedWalletDtos.cs
+@@ -0,0 +1,83 @@
++﻿namespace QuickPay.BLL.DTOs.SharedWallet
++{
++    public class SharedWalletDto
++    {
++        public int Id { get; set; }
++
++        public string Name { get; set; } = string.Empty;
++
++        public decimal Balance { get; set; }
++
++        public string Currency { get; set; } = "EGP";
++
++        public bool IsActive { get; set; }
++
++        public IEnumerable<SharedWalletMemberDto> Members { get; set; }
++            = Enumerable.Empty<SharedWalletMemberDto>();
++    }
++
++    public class SharedWalletMemberDto
++    {
++        public int UserId { get; set; }
++
++        public string UserName { get; set; } = string.Empty;
++
++        public string Role { get; set; } = string.Empty;
++
++        public DateTime JoinedAt { get; set; }
++    }
++
++    public class CreateSharedWalletDto
++    {
++        public int CurrentUserId { get; set; }
++
++        public string Name { get; set; } = string.Empty;
++    }
++
++    public class RenameSharedWalletDto
++    {
++        public int SharedWalletId { get; set; }
++
++        public int CurrentUserId { get; set; }
++
++        public string NewName { get; set; } = string.Empty;
++    }
++
++    public class AddSharedWalletMemberDto
++    {
++        public int SharedWalletId { get; set; }
++
++        public int CurrentUserId { get; set; }
++
++        /// <summary>Username, email, or phone number of the person to add.</summary>
++        public string Identifier { get; set; } = string.Empty;
++    }
++
++    public class RemoveSharedWalletMemberDto
++    {
++        public int SharedWalletId { get; set; }
++
++        public int CurrentUserId { get; set; }
++
++        public int MemberUserId { get; set; }
++    }
++
++    public class CloseSharedWalletDto
++    {
++        public int SharedWalletId { get; set; }
++
++        public int CurrentUserId { get; set; }
++    }
++
++    public class SharedWalletTransferDto
++    {
++        public int SharedWalletId { get; set; }
++
++        public int CurrentUserId { get; set; }
++
++        /// <summary>The member's own personal wallet, used as the other side of the transfer.</summary>
++        public int PersonalWalletId { get; set; }
++
++        public decimal Amount { get; set; }
++    }
++}
+diff --git a/QuickPay.BLL/Services/Implementation/SharedWalletService.cs b/QuickPay.BLL/Services/Implementation/SharedWalletService.cs
+new file mode 100644
+index 0000000..9e7e7b6
+--- /dev/null
++++ b/QuickPay.BLL/Services/Implementation/SharedWalletService.cs
+@@ -0,0 +1,326 @@
++﻿using QuickPay.BLL.DTOs;
++using QuickPay.BLL.DTOs.SharedWallet;
++using QuickPay.BLL.Services.Interfaces;
++using QuickPay.DAL.Entities;
++using QuickPay.DAL.Enums;
++using QuickPay.DAL.UnitOfWork;
++using SharedWalletEntity = QuickPay.DAL.Entities.SharedWallet;
++
++namespace QuickPay.BLL.Services.Implementation
++{
++    public class SharedWalletService : ISharedWalletService
++    {
++        private readonly IUnitOfWork _unitOfWork;
++        private readonly INotificationService _notificationService;
++
++        public SharedWalletService(
++            IUnitOfWork unitOfWork,
++            INotificationService notificationService)
++        {
++            _unitOfWork = unitOfWork;
++            _notificationService = notificationService;
++        }
++
++        public async Task<IEnumerable<SharedWalletDto>> GetMySharedWalletsAsync(
++            int userId,
++            CancellationToken cancellationToken = default)
++        {
++            var sharedWallets = await _unitOfWork.SharedWallets
++                .GetByMemberUserIdAsync(userId, cancellationToken);
++
++            return sharedWallets.Select(ToDto);
++        }
++
++        public async Task<SharedWalletDto> GetDetailsAsync(
++            int sharedWalletId,
++            int currentUserId,
++            CancellationToken cancellationToken = default)
++        {
++            var sharedWallet = await GetMemberWalletOrThrow(
++                sharedWalletId, currentUserId, cancellationToken);
++
++            return ToDto(sharedWallet);
++        }
++
++        public async Task<IEnumerable<TransactionHistoryDto>> GetHistoryAsync(
++            int sharedWalletId,
++            int currentUserId,
++            CancellationToken cancellationToken = default)
++        {
++            // Membership check only - every member can see every operation
++            // (per spec), not just their own.
++            await GetMemberWalletOrThrow(
++                sharedWalletId, currentUserId, cancellationToken);
++
++            var transactions = await _unitOfWork.Transactions
++                .GetByAccountIdAsync(sharedWalletId, cancellationToken);
++
++            return transactions.Select(t => new TransactionHistoryDto
++            {
++                Id = t.Id,
++                Type = t.Type.ToString(),
++                Amount = t.Amount,
++                Status = t.Status.ToString(),
++                CreatedAt = t.CreatedAt,
++                Direction = t.FromAccountId == sharedWalletId
++                    ? "Outgoing"
++                    : "Incoming"
++            });
++        }
++
++        public async Task<SharedWalletDto> CreateAsync(
++            CreateSharedWalletDto request,
++            CancellationToken cancellationToken = default)
++        {
++            if (string.IsNullOrWhiteSpace(request.Name))
++            {
++                throw new ArgumentException(
++                    "Shared wallet name is required.");
++            }
++
++            var sharedWallet = new SharedWalletEntity
++            {
++                Name = request.Name.Trim(),
++                Balance = 0,
++                Currency = "EGP",
++                IsActive = true
++            };
++
++            // Creator becomes the first Admin - there is no separate
++            // "owner" column (see the RemoveOwnerColumn migration);
++            // ownership is just membership with the Admin role.
++            sharedWallet.Members.Add(new SharedWalletMember
++            {
++                UserId = request.CurrentUserId,
++                Role = SharedWalletRole.Admin,
++                JoinedAt = DateTime.UtcNow
++            });
++
++            await _unitOfWork.SharedWallets.AddAsync(
++                sharedWallet, cancellationToken);
++            await _unitOfWork.SaveChangesAsync(cancellationToken);
++
++            return await GetDetailsAsync(
++                sharedWallet.Id, request.CurrentUserId, cancellationToken);
++        }
++
++        public async Task<SharedWalletDto> RenameAsync(
++            RenameSharedWalletDto request,
++            CancellationToken cancellationToken = default)
++        {
++            if (string.IsNullOrWhiteSpace(request.NewName))
++            {
++                throw new ArgumentException(
++                    "Shared wallet name is required.");
++            }
++
++            await GetAdminMemberOrThrow(
++                request.SharedWalletId, request.CurrentUserId, cancellationToken);
++
++            var sharedWallet = await _unitOfWork.SharedWallets
++                .GetByIdAsync(request.SharedWalletId, cancellationToken);
++
++            if (sharedWallet is null)
++            {
++                throw new KeyNotFoundException("Shared wallet was not found.");
++            }
++
++            sharedWallet.Name = request.NewName.Trim();
++            sharedWallet.UpdatedAt = DateTime.UtcNow;
++
++            await _unitOfWork.SaveChangesAsync(cancellationToken);
++
++            return await GetDetailsAsync(
++                sharedWallet.Id, request.CurrentUserId, cancellationToken);
++        }
++
++        public async Task<SharedWalletDto> AddMemberAsync(
++            AddSharedWalletMemberDto request,
++            CancellationToken cancellationToken = default)
++        {
++            await GetAdminMemberOrThrow(
++                request.SharedWalletId, request.CurrentUserId, cancellationToken);
++
++            if (string.IsNullOrWhiteSpace(request.Identifier))
++            {
++                throw new ArgumentException(
++                    "Enter a username, phone number, or email to add.");
++            }
++
++            var userToAdd = await _unitOfWork.Users.GetByIdentifierAsync(
++                request.Identifier.Trim(), cancellationToken);
++
++            if (userToAdd is null)
++            {
++                throw new KeyNotFoundException(
++                    "No user found with that username, phone number, or email.");
++            }
++
++            var existingMembership = await _unitOfWork.SharedWalletMembers
++                .GetAsync(
++                    request.SharedWalletId, userToAdd.Id, cancellationToken);
++
++            if (existingMembership is not null)
++            {
++                throw new InvalidOperationException(
++                    "That person is already a member of this shared wallet.");
++            }
++
++            await _unitOfWork.SharedWalletMembers.AddAsync(
++                new SharedWalletMember
++                {
++                    SharedWalletId = request.SharedWalletId,
++                    UserId = userToAdd.Id,
++                    Role = SharedWalletRole.Member,
++                    JoinedAt = DateTime.UtcNow
++                },
++                cancellationToken);
++
++            await _unitOfWork.SaveChangesAsync(cancellationToken);
++
++            await _notificationService.NotifyAsync(
++                userToAdd.Id,
++                type: "SharedWalletMemberAdded",
++                message: "You were added to a shared wallet.",
++                cancellationToken);
++
++            return await GetDetailsAsync(
++                request.SharedWalletId, request.CurrentUserId, cancellationToken);
++        }
++
++        public async Task RemoveMemberAsync(
++            RemoveSharedWalletMemberDto request,
++            CancellationToken cancellationToken = default)
++        {
++            await GetAdminMemberOrThrow(
++                request.SharedWalletId, request.CurrentUserId, cancellationToken);
++
++            var membershipToRemove = await _unitOfWork.SharedWalletMembers
++                .GetAsync(
++                    request.SharedWalletId,
++                    request.MemberUserId,
++                    cancellationToken);
++
++            if (membershipToRemove is null)
++            {
++                throw new KeyNotFoundException(
++                    "That person is not a member of this shared wallet.");
++            }
++
++            if (membershipToRemove.Role == SharedWalletRole.Admin)
++            {
++                var adminCount = await _unitOfWork.SharedWalletMembers
++                    .CountAdminsAsync(request.SharedWalletId, cancellationToken);
++
++                if (adminCount <= 1)
++                {
++                    throw new InvalidOperationException(
++                        "Cannot remove the last admin. Promote another member first.");
++                }
++            }
++
++            _unitOfWork.SharedWalletMembers.Remove(membershipToRemove);
++            await _unitOfWork.SaveChangesAsync(cancellationToken);
++
++            await _notificationService.NotifyAsync(
++                request.MemberUserId,
++                type: "SharedWalletMemberRemoved",
++                message: "You were removed from a shared wallet.",
++                cancellationToken);
++        }
++
++        public async Task CloseAsync(
++            CloseSharedWalletDto request,
++            CancellationToken cancellationToken = default)
++        {
++            await GetAdminMemberOrThrow(
++                request.SharedWalletId, request.CurrentUserId, cancellationToken);
++
++            var sharedWallet = await _unitOfWork.SharedWallets
++                .GetByIdAsync(request.SharedWalletId, cancellationToken);
++
++            if (sharedWallet is null)
++            {
++                throw new KeyNotFoundException("Shared wallet was not found.");
++            }
++
++            if (sharedWallet.Balance != 0)
++            {
++                throw new InvalidOperationException(
++                    "Cannot close a shared wallet with a remaining balance. Transfer the funds out first.");
++            }
++
++            // Soft close, same as personal wallets: other modules still
++            // reference this account by Id through past transactions.
++            sharedWallet.IsActive = false;
++            sharedWallet.UpdatedAt = DateTime.UtcNow;
++
++            await _unitOfWork.SaveChangesAsync(cancellationToken);
++        }
++
++        private async Task<SharedWalletEntity> GetMemberWalletOrThrow(
++            int sharedWalletId,
++            int currentUserId,
++            CancellationToken cancellationToken)
++        {
++            var sharedWallet = await _unitOfWork.SharedWallets
++                .GetWithMembersAsync(sharedWalletId, cancellationToken);
++
++            if (sharedWallet is null)
++            {
++                throw new KeyNotFoundException("Shared wallet was not found.");
++            }
++
++            var isMember = sharedWallet.Members
++                .Any(m => m.UserId == currentUserId);
++
++            if (!isMember)
++            {
++                throw new UnauthorizedAccessException(
++                    "You are not a member of this shared wallet.");
++            }
++
++            return sharedWallet;
++        }
++
++        private async Task GetAdminMemberOrThrow(
++            int sharedWalletId,
++            int currentUserId,
++            CancellationToken cancellationToken)
++        {
++            var membership = await _unitOfWork.SharedWalletMembers
++                .GetAsync(sharedWalletId, currentUserId, cancellationToken);
++
++            if (membership is null)
++            {
++                throw new UnauthorizedAccessException(
++                    "You are not a member of this shared wallet.");
++            }
++
++            if (membership.Role != SharedWalletRole.Admin)
++            {
++                throw new UnauthorizedAccessException(
++                    "Only shared wallet admins can do this.");
++            }
++        }
++
++        private static SharedWalletDto ToDto(SharedWalletEntity sharedWallet)
++        {
++            return new SharedWalletDto
++            {
++                Id = sharedWallet.Id,
++                Name = sharedWallet.Name,
++                Balance = sharedWallet.Balance,
++                Currency = sharedWallet.Currency,
++                IsActive = sharedWallet.IsActive,
++                Members = sharedWallet.Members.Select(m => new SharedWalletMemberDto
++                {
++                    UserId = m.UserId,
++                    UserName = m.User.UserName,
++                    Role = m.Role.ToString(),
++                    JoinedAt = m.JoinedAt
++                })
++            };
++        }
++    }
++}
+diff --git a/QuickPay.BLL/Services/Interfaces/ISharedWalletService.cs b/QuickPay.BLL/Services/Interfaces/ISharedWalletService.cs
+new file mode 100644
+index 0000000..797dd17
+--- /dev/null
++++ b/QuickPay.BLL/Services/Interfaces/ISharedWalletService.cs
+@@ -0,0 +1,42 @@
++﻿using QuickPay.BLL.DTOs;
++using QuickPay.BLL.DTOs.SharedWallet;
++
++namespace QuickPay.BLL.Services.Interfaces
++{
++    public interface ISharedWalletService
++    {
++        Task<IEnumerable<SharedWalletDto>> GetMySharedWalletsAsync(
++            int userId,
++            CancellationToken cancellationToken = default);
++
++        Task<SharedWalletDto> GetDetailsAsync(
++            int sharedWalletId,
++            int currentUserId,
++            CancellationToken cancellationToken = default);
++
++        Task<IEnumerable<TransactionHistoryDto>> GetHistoryAsync(
++            int sharedWalletId,
++            int currentUserId,
++            CancellationToken cancellationToken = default);
++
++        Task<SharedWalletDto> CreateAsync(
++            CreateSharedWalletDto request,
++            CancellationToken cancellationToken = default);
++
++        Task<SharedWalletDto> RenameAsync(
++            RenameSharedWalletDto request,
++            CancellationToken cancellationToken = default);
++
++        Task<SharedWalletDto> AddMemberAsync(
++            AddSharedWalletMemberDto request,
++            CancellationToken cancellationToken = default);
++
++        Task RemoveMemberAsync(
++            RemoveSharedWalletMemberDto request,
++            CancellationToken cancellationToken = default);
++
++        Task CloseAsync(
++            CloseSharedWalletDto request,
++            CancellationToken cancellationToken = default);
++    }
++}
+diff --git a/QuickPay.DAL/Entities/User.cs b/QuickPay.DAL/Entities/User.cs
+index f8eb1d5..5a98385 100644
+--- a/QuickPay.DAL/Entities/User.cs
++++ b/QuickPay.DAL/Entities/User.cs
+@@ -23,9 +23,9 @@
+         public ICollection<Wallet> Wallets { get; set; }
+             = new List<Wallet>();
+ 
+-        public ICollection<SharedWallet> OwnedSharedWallets { get; set; }
+-            = new List<SharedWallet>();
+-
++        // Ownership of a SharedWallet is expressed via a SharedWalletMember
++        // row with Role == Admin, not a direct FK on SharedWallet (that
++        // column was removed - see the RemoveOwnerColumn migration).
+         public ICollection<SharedWalletMember> SharedWalletMemberships { get; set; }
+             = new List<SharedWalletMember>();
+     }
+diff --git a/QuickPay.DAL/Repositries/Implementaion/SharedWalletMemberRepository.cs b/QuickPay.DAL/Repositries/Implementaion/SharedWalletMemberRepository.cs
+new file mode 100644
+index 0000000..86628fe
+--- /dev/null
++++ b/QuickPay.DAL/Repositries/Implementaion/SharedWalletMemberRepository.cs
+@@ -0,0 +1,53 @@
++﻿using Microsoft.EntityFrameworkCore;
++using QuickPay.DAL.Entities;
++using QuickPay.DAL.Enums;
++using QuickPay.DAL.Repositries.Interfaces;
++
++namespace QuickPay.DAL.Repositries.Implementaion
++{
++    public class SharedWalletMemberRepository : ISharedWalletMemberRepository
++    {
++        private readonly QuickPayDbContext _context;
++
++        public SharedWalletMemberRepository(QuickPayDbContext context)
++        {
++            _context = context;
++        }
++
++        public async Task<SharedWalletMember?> GetAsync(
++            int sharedWalletId,
++            int userId,
++            CancellationToken cancellationToken = default)
++        {
++            return await _context.Set<SharedWalletMember>()
++                .FirstOrDefaultAsync(
++                    m => m.SharedWalletId == sharedWalletId &&
++                         m.UserId == userId,
++                    cancellationToken);
++        }
++
++        public async Task<int> CountAdminsAsync(
++            int sharedWalletId,
++            CancellationToken cancellationToken = default)
++        {
++            return await _context.Set<SharedWalletMember>()
++                .CountAsync(
++                    m => m.SharedWalletId == sharedWalletId &&
++                         m.Role == SharedWalletRole.Admin,
++                    cancellationToken);
++        }
++
++        public async Task AddAsync(
++            SharedWalletMember member,
++            CancellationToken cancellationToken = default)
++        {
++            await _context.Set<SharedWalletMember>()
++                .AddAsync(member, cancellationToken);
++        }
++
++        public void Remove(SharedWalletMember member)
++        {
++            _context.Set<SharedWalletMember>().Remove(member);
++        }
++    }
++}
+diff --git a/QuickPay.DAL/Repositries/Implementaion/SharedWalletRepository.cs b/QuickPay.DAL/Repositries/Implementaion/SharedWalletRepository.cs
+new file mode 100644
+index 0000000..0390f5b
+--- /dev/null
++++ b/QuickPay.DAL/Repositries/Implementaion/SharedWalletRepository.cs
+@@ -0,0 +1,60 @@
++﻿using Microsoft.EntityFrameworkCore;
++using QuickPay.DAL.Entities;
++using QuickPay.DAL.Repositries.Interfaces;
++
++namespace QuickPay.DAL.Repositries.Implementaion
++{
++    public class SharedWalletRepository : ISharedWalletRepository
++    {
++        private readonly QuickPayDbContext _context;
++
++        public SharedWalletRepository(QuickPayDbContext context)
++        {
++            _context = context;
++        }
++
++        public async Task<SharedWallet?> GetByIdAsync(
++            int id,
++            CancellationToken cancellationToken = default)
++        {
++            return await _context.Set<SharedWallet>()
++                .FirstOrDefaultAsync(
++                    x => x.Id == id,
++                    cancellationToken);
++        }
++
++        public async Task<SharedWallet?> GetWithMembersAsync(
++            int id,
++            CancellationToken cancellationToken = default)
++        {
++            return await _context.Set<SharedWallet>()
++                .Include(x => x.Members)
++                    .ThenInclude(m => m.User)
++                .FirstOrDefaultAsync(
++                    x => x.Id == id,
++                    cancellationToken);
++        }
++
++        public async Task<IEnumerable<SharedWallet>> GetByMemberUserIdAsync(
++            int userId,
++            CancellationToken cancellationToken = default)
++        {
++            return await _context.Set<SharedWallet>()
++                .Include(x => x.Members)
++                    .ThenInclude(m => m.User)
++                .Where(x =>
++                    x.IsActive &&
++                    x.Members.Any(m => m.UserId == userId))
++                .AsNoTracking()
++                .ToListAsync(cancellationToken);
++        }
++
++        public async Task AddAsync(
++            SharedWallet sharedWallet,
++            CancellationToken cancellationToken = default)
++        {
++            await _context.Set<SharedWallet>()
++                .AddAsync(sharedWallet, cancellationToken);
++        }
++    }
++}
+diff --git a/QuickPay.DAL/Repositries/Implementaion/UserRepository.cs b/QuickPay.DAL/Repositries/Implementaion/UserRepository.cs
+index b9f02ea..0dd4399 100644
+--- a/QuickPay.DAL/Repositries/Implementaion/UserRepository.cs
++++ b/QuickPay.DAL/Repositries/Implementaion/UserRepository.cs
+@@ -31,6 +31,18 @@ namespace QuickPay.DAL.Repositries.Implementaion
+                     cancellationToken);
+         }
+ 
++        public async Task<User?> GetByIdentifierAsync(
++            string identifier,
++            CancellationToken cancellationToken = default)
++        {
++            return await _context.Users
++                .FirstOrDefaultAsync(
++                    x => x.UserName == identifier ||
++                         x.Email == identifier ||
++                         x.PhoneNumber == identifier,
++                    cancellationToken);
++        }
++
+         public async Task<bool> ExistsByEmailAsync(
+             string email,
+             CancellationToken cancellationToken = default)
+diff --git a/QuickPay.DAL/Repositries/Interfaces/ISharedWalletMemberRepository.cs b/QuickPay.DAL/Repositries/Interfaces/ISharedWalletMemberRepository.cs
+new file mode 100644
+index 0000000..7c53949
+--- /dev/null
++++ b/QuickPay.DAL/Repositries/Interfaces/ISharedWalletMemberRepository.cs
+@@ -0,0 +1,22 @@
++﻿using QuickPay.DAL.Entities;
++
++namespace QuickPay.DAL.Repositries.Interfaces
++{
++    public interface ISharedWalletMemberRepository
++    {
++        Task<SharedWalletMember?> GetAsync(
++            int sharedWalletId,
++            int userId,
++            CancellationToken cancellationToken = default);
++
++        Task<int> CountAdminsAsync(
++            int sharedWalletId,
++            CancellationToken cancellationToken = default);
++
++        Task AddAsync(
++            SharedWalletMember member,
++            CancellationToken cancellationToken = default);
++
++        void Remove(SharedWalletMember member);
++    }
++}
+diff --git a/QuickPay.DAL/Repositries/Interfaces/ISharedWalletRepository.cs b/QuickPay.DAL/Repositries/Interfaces/ISharedWalletRepository.cs
+new file mode 100644
+index 0000000..1e1a748
+--- /dev/null
++++ b/QuickPay.DAL/Repositries/Interfaces/ISharedWalletRepository.cs
+@@ -0,0 +1,24 @@
++﻿using QuickPay.DAL.Entities;
++
++namespace QuickPay.DAL.Repositries.Interfaces
++{
++    public interface ISharedWalletRepository
++    {
++        Task<SharedWallet?> GetByIdAsync(
++            int id,
++            CancellationToken cancellationToken = default);
++
++        /// <summary>Includes Members + their User, for detail/membership checks.</summary>
++        Task<SharedWallet?> GetWithMembersAsync(
++            int id,
++            CancellationToken cancellationToken = default);
++
++        Task<IEnumerable<SharedWallet>> GetByMemberUserIdAsync(
++            int userId,
++            CancellationToken cancellationToken = default);
++
++        Task AddAsync(
++            SharedWallet sharedWallet,
++            CancellationToken cancellationToken = default);
++    }
++}
+diff --git a/QuickPay.DAL/Repositries/Interfaces/IUserRepository.cs b/QuickPay.DAL/Repositries/Interfaces/IUserRepository.cs
+index 2f641b0..9bcff73 100644
+--- a/QuickPay.DAL/Repositries/Interfaces/IUserRepository.cs
++++ b/QuickPay.DAL/Repositries/Interfaces/IUserRepository.cs
+@@ -12,6 +12,11 @@ namespace QuickPay.DAL.Repositries.Interfaces
+             string email,
+             CancellationToken cancellationToken = default);
+ 
++        /// <summary>Used to resolve a person to invite by username, phone, or email.</summary>
++        Task<User?> GetByIdentifierAsync(
++            string identifier,
++            CancellationToken cancellationToken = default);
++
+         Task<bool> ExistsByEmailAsync(
+             string email,
+             CancellationToken cancellationToken = default);
+diff --git a/QuickPay.DAL/UnitOfWork/IUnitOfWork.cs b/QuickPay.DAL/UnitOfWork/IUnitOfWork.cs
+index 25a3bca..505ade6 100644
+--- a/QuickPay.DAL/UnitOfWork/IUnitOfWork.cs
++++ b/QuickPay.DAL/UnitOfWork/IUnitOfWork.cs
+@@ -19,6 +19,10 @@ namespace QuickPay.DAL.UnitOfWork
+ 
+         IWalletRepository Wallets { get; }
+ 
++        ISharedWalletRepository SharedWallets { get; }
++
++        ISharedWalletMemberRepository SharedWalletMembers { get; }
++
+         INotificationRepository Notifications { get; }
+ 
+         Task<int> SaveChangesAsync(
+diff --git a/QuickPay.DAL/UnitOfWork/UnitOfWork.cs b/QuickPay.DAL/UnitOfWork/UnitOfWork.cs
+index 7e9bc44..036b4bb 100644
+--- a/QuickPay.DAL/UnitOfWork/UnitOfWork.cs
++++ b/QuickPay.DAL/UnitOfWork/UnitOfWork.cs
+@@ -26,11 +26,17 @@ namespace QuickPay.DAL.UnitOfWork
+ 
+         public IWalletRepository Wallets { get; }
+ 
++        public ISharedWalletRepository SharedWallets { get; }
++
++        public ISharedWalletMemberRepository SharedWalletMembers { get; }
++
+         public UnitOfWork(
+             QuickPayDbContext context,
+             ITransactionRepository transactionRepository,
+             IFinancialAccountRepository financialAccountRepository,
+             IWalletRepository walletRepository,
++            ISharedWalletRepository sharedWalletRepository,
++            ISharedWalletMemberRepository sharedWalletMemberRepository,
+             IUserRepository userRepository,
+             IRefreshTokenRepository refreshTokenRepository,
+             IOtpCodeRepository otpCodeRepository,
+@@ -41,6 +47,8 @@ namespace QuickPay.DAL.UnitOfWork
+             Transactions = transactionRepository;
+             FinancialAccounts = financialAccountRepository;
+             Wallets = walletRepository;
++            SharedWallets = sharedWalletRepository;
++            SharedWalletMembers = sharedWalletMemberRepository;
+ 
+             Users = userRepository;
+             RefreshTokens = refreshTokenRepository;
+diff --git a/QuickPay.PL/Controllers/SharedWalletController.cs b/QuickPay.PL/Controllers/SharedWalletController.cs
+new file mode 100644
+index 0000000..dd7ffd8
+--- /dev/null
++++ b/QuickPay.PL/Controllers/SharedWalletController.cs
+@@ -0,0 +1,219 @@
++﻿using Microsoft.AspNetCore.Authorization;
++using Microsoft.AspNetCore.Mvc;
++using QuickPay.BLL.DTOs.SharedWallet;
++using QuickPay.BLL.Services.Interfaces;
++
++namespace QuickPay.PL.Controllers
++{
++    [Authorize]
++    public class SharedWalletController : Controller
++    {
++        private readonly ISharedWalletService _sharedWalletService;
++        private readonly ICurrentUserService _currentUserService;
++
++        public SharedWalletController(
++            ISharedWalletService sharedWalletService,
++            ICurrentUserService currentUserService)
++        {
++            _sharedWalletService = sharedWalletService;
++            _currentUserService = currentUserService;
++        }
++
++        [HttpGet]
++        public async Task<IActionResult> Index(CancellationToken cancellationToken)
++        {
++            var userId = _currentUserService.GetCurrentUserId();
++
++            var sharedWallets = await _sharedWalletService
++                .GetMySharedWalletsAsync(userId, cancellationToken);
++
++            return View(sharedWallets);
++        }
++
++        [HttpGet]
++        public async Task<IActionResult> Details(
++            int id, CancellationToken cancellationToken)
++        {
++            var userId = _currentUserService.GetCurrentUserId();
++
++            try
++            {
++                var sharedWallet = await _sharedWalletService
++                    .GetDetailsAsync(id, userId, cancellationToken);
++
++                ViewBag.History = await _sharedWalletService
++                    .GetHistoryAsync(id, userId, cancellationToken);
++
++                ViewBag.CurrentUserId = userId;
++
++                return View(sharedWallet);
++            }
++            catch (KeyNotFoundException)
++            {
++                return NotFound();
++            }
++            catch (UnauthorizedAccessException)
++            {
++                return Forbid();
++            }
++        }
++
++        [HttpGet]
++        public IActionResult Create() => View();
++
++        [HttpPost]
++        [ValidateAntiForgeryToken]
++        public async Task<IActionResult> Create(
++            string name, CancellationToken cancellationToken)
++        {
++            var userId = _currentUserService.GetCurrentUserId();
++
++            try
++            {
++                var sharedWallet = await _sharedWalletService.CreateAsync(
++                    new CreateSharedWalletDto
++                    {
++                        CurrentUserId = userId,
++                        Name = name
++                    },
++                    cancellationToken);
++
++                TempData["SuccessMessage"] = $"\"{sharedWallet.Name}\" was created.";
++
++                return RedirectToAction(nameof(Details), new { id = sharedWallet.Id });
++            }
++            catch (ArgumentException ex)
++            {
++                ModelState.AddModelError(string.Empty, ex.Message);
++                return View();
++            }
++        }
++
++        [HttpPost]
++        [ValidateAntiForgeryToken]
++        public async Task<IActionResult> Rename(
++            int id, string newName, CancellationToken cancellationToken)
++        {
++            var userId = _currentUserService.GetCurrentUserId();
++
++            await TryAsync(
++                () => _sharedWalletService.RenameAsync(
++                    new RenameSharedWalletDto
++                    {
++                        SharedWalletId = id,
++                        CurrentUserId = userId,
++                        NewName = newName
++                    },
++                    cancellationToken),
++                "Renamed.");
++
++            return RedirectToAction(nameof(Details), new { id });
++        }
++
++        [HttpPost]
++        [ValidateAntiForgeryToken]
++        public async Task<IActionResult> AddMember(
++            int id, string identifier, CancellationToken cancellationToken)
++        {
++            var userId = _currentUserService.GetCurrentUserId();
++
++            await TryAsync(
++                () => _sharedWalletService.AddMemberAsync(
++                    new AddSharedWalletMemberDto
++                    {
++                        SharedWalletId = id,
++                        CurrentUserId = userId,
++                        Identifier = identifier
++                    },
++                    cancellationToken),
++                "Member added.");
++
++            return RedirectToAction(nameof(Details), new { id });
++        }
++
++        [HttpPost]
++        [ValidateAntiForgeryToken]
++        public async Task<IActionResult> RemoveMember(
++            int id, int memberUserId, CancellationToken cancellationToken)
++        {
++            var userId = _currentUserService.GetCurrentUserId();
++
++            try
++            {
++                await _sharedWalletService.RemoveMemberAsync(
++                    new RemoveSharedWalletMemberDto
++                    {
++                        SharedWalletId = id,
++                        CurrentUserId = userId,
++                        MemberUserId = memberUserId
++                    },
++                    cancellationToken);
++
++                TempData["SuccessMessage"] = "Member removed.";
++            }
++            catch (Exception ex) when (
++                ex is KeyNotFoundException or
++                UnauthorizedAccessException or
++                InvalidOperationException)
++            {
++                TempData["ErrorMessage"] = ex.Message;
++            }
++
++            return RedirectToAction(nameof(Details), new { id });
++        }
++
++        [HttpPost]
++        [ValidateAntiForgeryToken]
++        public async Task<IActionResult> Close(
++            int id, CancellationToken cancellationToken)
++        {
++            var userId = _currentUserService.GetCurrentUserId();
++
++            try
++            {
++                await _sharedWalletService.CloseAsync(
++                    new CloseSharedWalletDto
++                    {
++                        SharedWalletId = id,
++                        CurrentUserId = userId
++                    },
++                    cancellationToken);
++
++                TempData["SuccessMessage"] = "Shared wallet closed.";
++
++                return RedirectToAction(nameof(Index));
++            }
++            catch (Exception ex) when (
++                ex is KeyNotFoundException or
++                UnauthorizedAccessException or
++                InvalidOperationException)
++            {
++                TempData["ErrorMessage"] = ex.Message;
++                return RedirectToAction(nameof(Details), new { id });
++            }
++        }
++
++        /// <summary>
++        /// Runs an action and turns the common domain exceptions into a
++        /// TempData message instead of an unhandled 500 - every write
++        /// action above just redirects back to Details either way, so the
++        /// only thing that differs is the message shown.
++        /// </summary>
++        private async Task TryAsync(Func<Task> action, string successMessage)
++        {
++            try
++            {
++                await action();
++                TempData["SuccessMessage"] = successMessage;
++            }
++            catch (Exception ex) when (
++                ex is ArgumentException or
++                KeyNotFoundException or
++                UnauthorizedAccessException or
++                InvalidOperationException)
++            {
++                TempData["ErrorMessage"] = ex.Message;
++            }
++        }
++    }
++}
+diff --git a/QuickPay.PL/Program.cs b/QuickPay.PL/Program.cs
+index c40cac5..8c39368 100644
+--- a/QuickPay.PL/Program.cs
++++ b/QuickPay.PL/Program.cs
+@@ -34,6 +34,8 @@ builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+ builder.Services.AddScoped<IFinancialAccountRepository, FinancialAccountRepository>();
+ builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+ builder.Services.AddScoped<IWalletRepository, WalletRepository>();
++builder.Services.AddScoped<ISharedWalletRepository, SharedWalletRepository>();
++builder.Services.AddScoped<ISharedWalletMemberRepository, SharedWalletMemberRepository>();
+ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+ builder.Services.AddHttpContextAccessor();
+ 
+@@ -53,6 +55,7 @@ builder.Services.AddScoped<IRealtimeNotifier, SignalRNotifier>();
+ builder.Services.AddScoped<INotificationService, NotificationService>();
+ builder.Services.AddScoped<ITransactionHistoryService, TransactionHistoryService>();
+ builder.Services.AddScoped<IWalletService, WalletService>();
++builder.Services.AddScoped<ISharedWalletService, SharedWalletService>();
+ 
+ builder.Services.AddAutoMapper(m => m.AddProfile<AuthProfile>());
+ builder.Services.AddAutoMapper(m => m.AddProfile<TransferProfile>());
+diff --git a/QuickPay.PL/Views/Shared/_Layout.cshtml b/QuickPay.PL/Views/Shared/_Layout.cshtml
+index 60f3342..0dd5119 100644
+--- a/QuickPay.PL/Views/Shared/_Layout.cshtml
++++ b/QuickPay.PL/Views/Shared/_Layout.cshtml
+@@ -26,6 +26,9 @@
+                         <li class="nav-item">
+                             <a class="nav-link" asp-area="" asp-controller="Wallet" asp-action="Index">Wallets</a>
+                         </li>
++                        <li class="nav-item">
++                            <a class="nav-link" asp-area="" asp-controller="SharedWallet" asp-action="Index">Shared Wallets</a>
++                        </li>
+                         <li class="nav-item">
+                             <a class="nav-link" asp-area="" asp-controller="Transfer" asp-action="Index">Transfer</a>
+                         </li>
+diff --git a/QuickPay.PL/Views/SharedWallet/Create.cshtml b/QuickPay.PL/Views/SharedWallet/Create.cshtml
+new file mode 100644
+index 0000000..bd5025a
+--- /dev/null
++++ b/QuickPay.PL/Views/SharedWallet/Create.cshtml
+@@ -0,0 +1,26 @@
++@{
++    ViewData["Title"] = "New Shared Wallet";
++}
++
++<div class="container py-5">
++    <div class="row justify-content-center">
++        <div class="col-md-6">
++
++            <h2 class="mb-4">New Shared Wallet</h2>
++
++            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
++
++            <form asp-action="Create" method="post">
++                @Html.AntiForgeryToken()
++
++                <div class="mb-3">
++                    <label class="form-label">Name</label>
++                    <input type="text" name="name" class="form-control" placeholder="e.g. Trip to Alexandria" required />
++                </div>
++
++                <button type="submit" class="btn btn-primary w-100">Create</button>
++            </form>
++
++        </div>
++    </div>
++</div>
+diff --git a/QuickPay.PL/Views/SharedWallet/Details.cshtml b/QuickPay.PL/Views/SharedWallet/Details.cshtml
+new file mode 100644
+index 0000000..0c02427
+--- /dev/null
++++ b/QuickPay.PL/Views/SharedWallet/Details.cshtml
+@@ -0,0 +1,144 @@
++@using QuickPay.BLL.DTOs
++@using QuickPay.BLL.DTOs.SharedWallet
++@model SharedWalletDto
++
++@{
++    ViewData["Title"] = Model.Name;
++    var currentUserId = (int)ViewBag.CurrentUserId;
++    var history = (IEnumerable<TransactionHistoryDto>)ViewBag.History;
++    var isAdmin = Model.Members.Any(m => m.UserId == currentUserId && m.Role == "Admin");
++}
++
++<div class="container py-5">
++    <div class="row justify-content-center">
++        <div class="col-md-8">
++
++            @if (TempData["SuccessMessage"] is not null)
++            {
++                <div class="alert alert-success">@TempData["SuccessMessage"]</div>
++            }
++            @if (TempData["ErrorMessage"] is not null)
++            {
++                <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
++            }
++
++            <div class="card shadow-sm mb-4">
++                <div class="card-body p-4">
++                    <div class="d-flex justify-content-between align-items-start">
++                        <div>
++                            <h2 class="mb-1">@Model.Name</h2>
++                            <span class="badge @(Model.IsActive ? "bg-success" : "bg-secondary")">
++                                @(Model.IsActive ? "Active" : "Closed")
++                            </span>
++                        </div>
++                        <div class="fs-3">
++                            @Model.Balance.ToString("N2") <span class="text-muted fs-6">@Model.Currency</span>
++                        </div>
++                    </div>
++
++                    @if (isAdmin && Model.IsActive)
++                    {
++                        <hr />
++                        <form asp-action="Rename" method="post" class="d-inline">
++                            @Html.AntiForgeryToken()
++                            <input type="hidden" name="id" value="@Model.Id" />
++                            <input type="text" name="newName" value="@Model.Name" class="form-control d-inline w-auto" />
++                            <button type="submit" class="btn btn-secondary btn-sm">Rename</button>
++                        </form>
++
++                        <form asp-action="Close" method="post" class="d-inline"
++                              onsubmit="return confirm('Close this shared wallet? Balance must be zero.');">
++                            @Html.AntiForgeryToken()
++                            <input type="hidden" name="id" value="@Model.Id" />
++                            <button type="submit" class="btn btn-outline-danger btn-sm">Close Wallet</button>
++                        </form>
++                    }
++
++                    <p class="text-muted small mt-3 mb-0">
++                        To move money in or out, use <a asp-controller="Transfer" asp-action="Index">Transfer</a> -
++                        this shared wallet shows up as a destination/source there like any other account.
++                    </p>
++                </div>
++            </div>
++
++            <div class="card shadow-sm mb-4">
++                <div class="card-body p-4">
++                    <h5 class="mb-3">Members</h5>
++
++                    <table class="table table-sm align-middle">
++                        <tbody>
++                            @foreach (var member in Model.Members)
++                            {
++                                <tr>
++                                    <td>@member.UserName</td>
++                                    <td><span class="badge bg-light text-dark">@member.Role</span></td>
++                                    <td class="text-muted small">joined @member.JoinedAt.ToString("MMM d, yyyy")</td>
++                                    <td class="text-end">
++                                        @if (isAdmin && member.UserId != currentUserId)
++                                        {
++                                            <form asp-action="RemoveMember" method="post" class="d-inline"
++                                                  onsubmit="return confirm('Remove this member?');">
++                                                @Html.AntiForgeryToken()
++                                                <input type="hidden" name="id" value="@Model.Id" />
++                                                <input type="hidden" name="memberUserId" value="@member.UserId" />
++                                                <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
++                                            </form>
++                                        }
++                                    </td>
++                                </tr>
++                            }
++                        </tbody>
++                    </table>
++
++                    @if (isAdmin && Model.IsActive)
++                    {
++                        <form asp-action="AddMember" method="post" class="d-flex gap-2 mt-2">
++                            @Html.AntiForgeryToken()
++                            <input type="hidden" name="id" value="@Model.Id" />
++                            <input type="text" name="identifier" class="form-control" placeholder="Username, phone, or email" required />
++                            <button type="submit" class="btn btn-primary">Add Member</button>
++                        </form>
++                    }
++                </div>
++            </div>
++
++            <div class="card shadow-sm">
++                <div class="card-body p-4">
++                    <h5 class="mb-3">History</h5>
++
++                    @if (!history.Any())
++                    {
++                        <p class="text-muted mb-0">No activity yet.</p>
++                    }
++                    else
++                    {
++                        <table class="table table-sm">
++                            <thead>
++                                <tr>
++                                    <th>Type</th>
++                                    <th>Direction</th>
++                                    <th>Amount</th>
++                                    <th>Status</th>
++                                    <th>Date</th>
++                                </tr>
++                            </thead>
++                            <tbody>
++                                @foreach (var entry in history)
++                                {
++                                    <tr>
++                                        <td>@entry.Type</td>
++                                        <td>@entry.Direction</td>
++                                        <td>@entry.Amount.ToString("N2")</td>
++                                        <td>@entry.Status</td>
++                                        <td class="text-muted small">@entry.CreatedAt.ToString("MMM d, yyyy HH:mm")</td>
++                                    </tr>
++                                }
++                            </tbody>
++                        </table>
++                    }
++                </div>
++            </div>
++
++        </div>
++    </div>
++</div>
+diff --git a/QuickPay.PL/Views/SharedWallet/Index.cshtml b/QuickPay.PL/Views/SharedWallet/Index.cshtml
+new file mode 100644
+index 0000000..fc6c3bc
+--- /dev/null
++++ b/QuickPay.PL/Views/SharedWallet/Index.cshtml
+@@ -0,0 +1,50 @@
++@using QuickPay.BLL.DTOs.SharedWallet
++@model IEnumerable<SharedWalletDto>
++
++@{
++    ViewData["Title"] = "Shared Wallets";
++}
++
++<div class="container py-5">
++    <div class="row justify-content-center">
++        <div class="col-md-8">
++
++            @if (TempData["SuccessMessage"] is not null)
++            {
++                <div class="alert alert-success">@TempData["SuccessMessage"]</div>
++            }
++            @if (TempData["ErrorMessage"] is not null)
++            {
++                <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
++            }
++
++            <div class="d-flex justify-content-between align-items-center mb-4">
++                <h2 class="mb-0">Shared Wallets</h2>
++                <a asp-action="Create" class="btn btn-primary">+ New Shared Wallet</a>
++            </div>
++
++            @if (!Model.Any())
++            {
++                <p class="text-muted">You're not part of any shared wallet yet.</p>
++            }
++
++            @foreach (var sharedWallet in Model)
++            {
++                <a asp-action="Details" asp-route-id="@sharedWallet.Id" class="text-decoration-none text-body">
++                    <div class="card shadow-sm mb-3">
++                        <div class="card-body p-4 d-flex justify-content-between align-items-center">
++                            <div>
++                                <h5 class="mb-1">@sharedWallet.Name</h5>
++                                <span class="text-muted small">@sharedWallet.Members.Count() member(s)</span>
++                            </div>
++                            <div class="fs-5">
++                                @sharedWallet.Balance.ToString("N2") <span class="text-muted fs-6">@sharedWallet.Currency</span>
++                            </div>
++                        </div>
++                    </div>
++                </a>
++            }
++
++        </div>
++    </div>
++</div>

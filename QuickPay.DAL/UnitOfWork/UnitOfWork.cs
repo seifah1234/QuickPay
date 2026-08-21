@@ -26,11 +26,17 @@ namespace QuickPay.DAL.UnitOfWork
 
         public IWalletRepository Wallets { get; }
 
+        public ISharedWalletRepository SharedWallets { get; }
+
+        public ISharedWalletMemberRepository SharedWalletMembers { get; }
+
         public UnitOfWork(
             QuickPayDbContext context,
             ITransactionRepository transactionRepository,
             IFinancialAccountRepository financialAccountRepository,
             IWalletRepository walletRepository,
+            ISharedWalletRepository sharedWalletRepository,
+            ISharedWalletMemberRepository sharedWalletMemberRepository,
             IUserRepository userRepository,
             IRefreshTokenRepository refreshTokenRepository,
             IOtpCodeRepository otpCodeRepository,
@@ -41,6 +47,8 @@ namespace QuickPay.DAL.UnitOfWork
             Transactions = transactionRepository;
             FinancialAccounts = financialAccountRepository;
             Wallets = walletRepository;
+            SharedWallets = sharedWalletRepository;
+            SharedWalletMembers = sharedWalletMemberRepository;
 
             Users = userRepository;
             RefreshTokens = refreshTokenRepository;

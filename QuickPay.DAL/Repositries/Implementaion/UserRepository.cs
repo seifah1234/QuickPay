@@ -31,6 +31,18 @@ namespace QuickPay.DAL.Repositries.Implementaion
                     cancellationToken);
         }
 
+        public async Task<User?> GetByIdentifierAsync(
+            string identifier,
+            CancellationToken cancellationToken = default)
+        {
+            return await _context.Users
+                .FirstOrDefaultAsync(
+                    x => x.UserName == identifier ||
+                         x.Email == identifier ||
+                         x.PhoneNumber == identifier,
+                    cancellationToken);
+        }
+
         public async Task<bool> ExistsByEmailAsync(
             string email,
             CancellationToken cancellationToken = default)

@@ -34,6 +34,8 @@ builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddScoped<IFinancialAccountRepository, FinancialAccountRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IWalletRepository, WalletRepository>();
+builder.Services.AddScoped<ISharedWalletRepository, SharedWalletRepository>();
+builder.Services.AddScoped<ISharedWalletMemberRepository, SharedWalletMemberRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddHttpContextAccessor();
 
@@ -53,6 +55,7 @@ builder.Services.AddScoped<IRealtimeNotifier, SignalRNotifier>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ITransactionHistoryService, TransactionHistoryService>();
 builder.Services.AddScoped<IWalletService, WalletService>();
+builder.Services.AddScoped<ISharedWalletService, SharedWalletService>();
 
 builder.Services.AddAutoMapper(m => m.AddProfile<AuthProfile>());
 builder.Services.AddAutoMapper(m => m.AddProfile<TransferProfile>());
