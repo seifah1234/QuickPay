@@ -8,7 +8,6 @@ namespace QuickPay.DAL.Repositries.Interfaces
             int id,
             CancellationToken cancellationToken = default);
 
-        /// <summary>Includes Members + their User, for detail/membership checks.</summary>
         Task<SharedWallet?> GetWithMembersAsync(
             int id,
             CancellationToken cancellationToken = default);
