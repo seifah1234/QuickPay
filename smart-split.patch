@@ -1,0 +1,1758 @@
+diff --git a/QuickPay.BLL/DTOs/SmartSplit/SmartSplitDtos.cs b/QuickPay.BLL/DTOs/SmartSplit/SmartSplitDtos.cs
+new file mode 100644
+index 0000000..17c4ad5
+--- /dev/null
++++ b/QuickPay.BLL/DTOs/SmartSplit/SmartSplitDtos.cs
+@@ -0,0 +1,99 @@
++﻿namespace QuickPay.BLL.DTOs.SmartSplit
++{
++    public class SplitParticipantInputDto
++    {
++        /// <summary>Username, email, or phone number of the participant.</summary>
++        public string Identifier { get; set; } = string.Empty;
++
++        /// <summary>Required for SplitType.CustomAmount.</summary>
++        public decimal? Amount { get; set; }
++
++        /// <summary>Required for SplitType.Percentage.</summary>
++        public decimal? Percentage { get; set; }
++    }
++
++    public class CreateSplitGroupDto
++    {
++        public int CurrentUserId { get; set; }
++
++        /// <summary>Which of the initiator's own wallets collects payments as participants pay in.</summary>
++        public int SettlementWalletId { get; set; }
++
++        public decimal TotalAmount { get; set; }
++
++        public string SplitType { get; set; } = string.Empty;
++
++        public DateTime? DueDate { get; set; }
++
++        public string? Description { get; set; }
++
++        public List<SplitParticipantInputDto> Participants { get; set; } = new();
++    }
++
++    public class SplitGroupDto
++    {
++        public int Id { get; set; }
++
++        public int InitiatorUserId { get; set; }
++
++        public string InitiatorUserName { get; set; } = string.Empty;
++
++        public decimal TotalAmount { get; set; }
++
++        public string Currency { get; set; } = "EGP";
++
++        public string SplitType { get; set; } = string.Empty;
++
++        public string Status { get; set; } = string.Empty;
++
++        public DateTime? DueDate { get; set; }
++
++        public DateTime CreatedAt { get; set; }
++
++        public IEnumerable<SplitParticipantDto> Participants { get; set; }
++            = Enumerable.Empty<SplitParticipantDto>();
++    }
++
++    public class SplitParticipantDto
++    {
++        public int Id { get; set; }
++
++        public int UserId { get; set; }
++
++        public string UserName { get; set; } = string.Empty;
++
++        public decimal Amount { get; set; }
++
++        public decimal? Percentage { get; set; }
++
++        public string Status { get; set; } = string.Empty;
++
++        public DateTime? PaidAt { get; set; }
++    }
++
++    public class PaySplitShareDto
++    {
++        public int SplitGroupId { get; set; }
++
++        public int CurrentUserId { get; set; }
++
++        public int FromWalletId { get; set; }
++    }
++
++    public class SendSplitReminderDto
++    {
++        public int SplitGroupId { get; set; }
++
++        public int CurrentUserId { get; set; }
++
++        /// <summary>Null = remind every participant who still hasn't paid.</summary>
++        public int? ParticipantUserId { get; set; }
++    }
++
++    public class CancelSplitGroupDto
++    {
++        public int SplitGroupId { get; set; }
++
++        public int CurrentUserId { get; set; }
++    }
++}
+diff --git a/QuickPay.BLL/Services/Implementation/SmartSplitService.cs b/QuickPay.BLL/Services/Implementation/SmartSplitService.cs
+new file mode 100644
+index 0000000..510b425
+--- /dev/null
++++ b/QuickPay.BLL/Services/Implementation/SmartSplitService.cs
+@@ -0,0 +1,445 @@
++﻿using Microsoft.EntityFrameworkCore;
++using QuickPay.BLL.DTOs.SmartSplit;
++using QuickPay.BLL.Services.Interfaces;
++using QuickPay.BLL.Services.SplitStrategies;
++using QuickPay.DAL.Entities;
++using QuickPay.DAL.Enums;
++using QuickPay.DAL.UnitOfWork;
++
++namespace QuickPay.BLL.Services.Implementation
++{
++    public class SmartSplitService : ISmartSplitService
++    {
++        private readonly IUnitOfWork _unitOfWork;
++        private readonly ISplitStrategyFactory _splitStrategyFactory;
++        private readonly INotificationService _notificationService;
++
++        public SmartSplitService(
++            IUnitOfWork unitOfWork,
++            ISplitStrategyFactory splitStrategyFactory,
++            INotificationService notificationService)
++        {
++            _unitOfWork = unitOfWork;
++            _splitStrategyFactory = splitStrategyFactory;
++            _notificationService = notificationService;
++        }
++
++        public async Task<IEnumerable<SplitGroupDto>> GetMySplitsAsync(
++            int userId,
++            CancellationToken cancellationToken = default)
++        {
++            var splitGroups = await _unitOfWork.SplitGroups
++                .GetForUserAsync(userId, cancellationToken);
++
++            return splitGroups.Select(ToDto);
++        }
++
++        public async Task<SplitGroupDto> GetDetailsAsync(
++            int splitGroupId,
++            int currentUserId,
++            CancellationToken cancellationToken = default)
++        {
++            var splitGroup = await GetAuthorizedSplitGroupAsync(
++                splitGroupId, currentUserId, cancellationToken);
++
++            return ToDto(splitGroup);
++        }
++
++        public async Task<SplitGroupDto> CreateSplitAsync(
++            CreateSplitGroupDto request,
++            CancellationToken cancellationToken = default)
++        {
++            if (request.TotalAmount <= 0)
++            {
++                throw new ArgumentException(
++                    "Total amount must be greater than zero.");
++            }
++
++            if (!Enum.TryParse<SplitType>(request.SplitType, out var splitType))
++            {
++                throw new ArgumentException(
++                    $"Unknown split type: {request.SplitType}.");
++            }
++
++            var isAuthorized = await _unitOfWork.FinancialAccounts
++                .IsUserAuthorizedForAccountAsync(
++                    request.SettlementWalletId,
++                    request.CurrentUserId,
++                    cancellationToken);
++
++            if (!isAuthorized)
++            {
++                throw new UnauthorizedAccessException(
++                    "You are not authorized to settle into this wallet.");
++            }
++
++            if (request.Participants.Count == 0)
++            {
++                throw new ArgumentException(
++                    "Add at least one participant to split with.");
++            }
++
++            // Resolve every identifier to an actual user up front, so a
++            // typo fails the whole request instead of silently dropping
++            // a participant.
++            var resolvedParticipants = new List<(User User, decimal? Amount, decimal? Percentage)>();
++
++            foreach (var participantInput in request.Participants)
++            {
++                if (string.IsNullOrWhiteSpace(participantInput.Identifier))
++                {
++                    throw new ArgumentException(
++                        "Every participant needs a username, phone number, or email.");
++                }
++
++                var user = await _unitOfWork.Users.GetByIdentifierAsync(
++                    participantInput.Identifier.Trim(), cancellationToken);
++
++                if (user is null)
++                {
++                    throw new KeyNotFoundException(
++                        $"No user found for \"{participantInput.Identifier}\".");
++                }
++
++                if (user.Id == request.CurrentUserId)
++                {
++                    throw new ArgumentException(
++                        "You can't add yourself as a participant - you're the one collecting the money.");
++                }
++
++                resolvedParticipants.Add((user, participantInput.Amount, participantInput.Percentage));
++            }
++
++            if (resolvedParticipants.Select(p => p.User.Id).Distinct().Count() != resolvedParticipants.Count)
++            {
++                throw new ArgumentException("Each participant can only appear once.");
++            }
++
++            var strategy = _splitStrategyFactory.Resolve(splitType);
++
++            var shareInputs = resolvedParticipants
++                .Select(p => new SplitShareInput(p.User.Id, p.Amount, p.Percentage))
++                .ToList();
++
++            // Throws ArgumentException with a specific reason if the
++            // amounts/percentages given don't add up correctly.
++            var shares = strategy.Calculate(request.TotalAmount, shareInputs);
++
++            var payment = new Payment
++            {
++                UserId = request.CurrentUserId,
++                Amount = request.TotalAmount,
++                Currency = "EGP",
++                Status = PaymentStatus.Pending,
++                SettlementWalletId = request.SettlementWalletId
++            };
++
++            var splitGroup = new SplitGroup
++            {
++                Payment = payment,
++                Status = SplitGroupStatus.Pending,
++                DueDate = request.DueDate,
++                SplitType = splitType
++            };
++
++            foreach (var share in shares)
++            {
++                splitGroup.Participants.Add(new SplitParticipant
++                {
++                    UserId = share.UserId,
++                    Amount = share.Amount,
++                    Percentage = share.Percentage,
++                    Status = SplitParticipantStatus.Pending
++                });
++            }
++
++            await _unitOfWork.Payments.AddAsync(payment, cancellationToken);
++            await _unitOfWork.SplitGroups.AddAsync(splitGroup, cancellationToken);
++            await _unitOfWork.SaveChangesAsync(cancellationToken);
++
++            foreach (var share in shares)
++            {
++                await _notificationService.NotifyAsync(
++                    share.UserId,
++                    type: "SplitRequested",
++                    message: $"You've been asked to pay {share.Amount:N2} EGP" +
++                        (string.IsNullOrWhiteSpace(request.Description) ? "." : $" for {request.Description}."),
++                    cancellationToken);
++            }
++
++            return await GetDetailsAsync(
++                splitGroup.Id, request.CurrentUserId, cancellationToken);
++        }
++
++        public async Task<SplitGroupDto> PayShareAsync(
++            PaySplitShareDto request,
++            CancellationToken cancellationToken = default)
++        {
++            var isAuthorized = await _unitOfWork.FinancialAccounts
++                .IsUserAuthorizedForAccountAsync(
++                    request.FromWalletId,
++                    request.CurrentUserId,
++                    cancellationToken);
++
++            if (!isAuthorized)
++            {
++                throw new UnauthorizedAccessException(
++                    "You are not authorized to pay from this wallet.");
++            }
++
++            var participant = await _unitOfWork.SplitParticipants.GetAsync(
++                request.SplitGroupId, request.CurrentUserId, cancellationToken);
++
++            if (participant is null)
++            {
++                throw new KeyNotFoundException(
++                    "You are not a participant in this split.");
++            }
++
++            if (participant.Status == SplitParticipantStatus.Paid)
++            {
++                throw new InvalidOperationException(
++                    "You've already paid your share.");
++            }
++
++            if (participant.SplitGroup.Status == SplitGroupStatus.Cancelled)
++            {
++                throw new InvalidOperationException(
++                    "This split was cancelled.");
++            }
++
++            await _unitOfWork.BeginTransactionAsync(cancellationToken);
++
++            try
++            {
++                var fromWallet = await _unitOfWork.FinancialAccounts
++                    .GetByIdAsync(request.FromWalletId, cancellationToken);
++
++                var settlementWallet = await _unitOfWork.FinancialAccounts
++                    .GetByIdAsync(
++                        participant.SplitGroup.Payment.SettlementWalletId,
++                        cancellationToken);
++
++                if (fromWallet is null || settlementWallet is null)
++                {
++                    throw new KeyNotFoundException("Wallet was not found.");
++                }
++
++                if (!fromWallet.IsActive)
++                {
++                    throw new InvalidOperationException("Your wallet is inactive.");
++                }
++
++                if (fromWallet.Balance < participant.Amount)
++                {
++                    throw new InvalidOperationException("Insufficient balance.");
++                }
++
++                fromWallet.Balance -= participant.Amount;
++                settlementWallet.Balance += participant.Amount;
++
++                var ledgerTransaction = new Transaction
++                {
++                    FromAccountId = fromWallet.Id,
++                    ToAccountId = settlementWallet.Id,
++                    Amount = participant.Amount,
++                    Type = TransactionType.SplitPayment,
++                    Status = TransactionStatus.Completed,
++                    PaymentId = participant.SplitGroup.PaymentId,
++                    CreatedAt = DateTime.UtcNow
++                };
++
++                await _unitOfWork.Transactions.AddAsync(ledgerTransaction);
++
++                participant.Status = SplitParticipantStatus.Paid;
++                participant.PaidAt = DateTime.UtcNow;
++
++                await UpdateSplitGroupStatusAsync(
++                    participant.SplitGroupId, cancellationToken);
++
++                try
++                {
++                    await _unitOfWork.SaveChangesAsync(cancellationToken);
++                }
++                catch (DbUpdateConcurrencyException)
++                {
++                    throw new InvalidOperationException(
++                        "One of the wallets was updated at the same time by another operation. Please try again.");
++                }
++
++                await _unitOfWork.CommitTransactionAsync(cancellationToken);
++            }
++            catch
++            {
++                await _unitOfWork.RollbackTransactionAsync(cancellationToken);
++                throw;
++            }
++
++            await _notificationService.NotifyAsync(
++                participant.SplitGroup.Payment.UserId,
++                type: "SplitShareReceived",
++                message: $"{participant.Amount:N2} EGP was paid towards your split.",
++                cancellationToken);
++
++            return await GetDetailsAsync(
++                request.SplitGroupId, request.CurrentUserId, cancellationToken);
++        }
++
++        public async Task SendReminderAsync(
++            SendSplitReminderDto request,
++            CancellationToken cancellationToken = default)
++        {
++            var splitGroup = await _unitOfWork.SplitGroups.GetWithDetailsAsync(
++                request.SplitGroupId, cancellationToken);
++
++            if (splitGroup is null)
++            {
++                throw new KeyNotFoundException("Split was not found.");
++            }
++
++            if (splitGroup.Payment.UserId != request.CurrentUserId)
++            {
++                throw new UnauthorizedAccessException(
++                    "Only the person who created the split can send reminders.");
++            }
++
++            var pendingParticipants = splitGroup.Participants
++                .Where(p => p.Status == SplitParticipantStatus.Pending)
++                .Where(p => request.ParticipantUserId is null || p.UserId == request.ParticipantUserId)
++                .ToList();
++
++            if (request.ParticipantUserId is not null && pendingParticipants.Count == 0)
++            {
++                throw new InvalidOperationException(
++                    "That participant has either already paid or isn't part of this split.");
++            }
++
++            foreach (var participant in pendingParticipants)
++            {
++                await _notificationService.NotifyAsync(
++                    participant.UserId,
++                    type: "SplitReminder",
++                    message: $"Reminder: you still owe {participant.Amount:N2} EGP for a split payment.",
++                    cancellationToken);
++            }
++        }
++
++        public async Task CancelAsync(
++            CancelSplitGroupDto request,
++            CancellationToken cancellationToken = default)
++        {
++            var splitGroup = await _unitOfWork.SplitGroups.GetWithDetailsAsync(
++                request.SplitGroupId, cancellationToken);
++
++            if (splitGroup is null)
++            {
++                throw new KeyNotFoundException("Split was not found.");
++            }
++
++            if (splitGroup.Payment.UserId != request.CurrentUserId)
++            {
++                throw new UnauthorizedAccessException(
++                    "Only the person who created the split can cancel it.");
++            }
++
++            if (splitGroup.Status != SplitGroupStatus.Pending)
++            {
++                throw new InvalidOperationException(
++                    "Can only cancel a split before anyone has paid their share.");
++            }
++
++            splitGroup.Status = SplitGroupStatus.Cancelled;
++            splitGroup.Payment.Status = PaymentStatus.Cancelled;
++            splitGroup.UpdatedAt = DateTime.UtcNow;
++
++            await _unitOfWork.SaveChangesAsync(cancellationToken);
++
++            foreach (var participant in splitGroup.Participants)
++            {
++                await _notificationService.NotifyAsync(
++                    participant.UserId,
++                    type: "SplitCancelled",
++                    message: "A split you were part of was cancelled.",
++                    cancellationToken);
++            }
++        }
++
++        /// <summary>Recomputes SplitGroup/Payment status from participant statuses. Caller saves.</summary>
++        private async Task UpdateSplitGroupStatusAsync(
++            int splitGroupId, CancellationToken cancellationToken)
++        {
++            var splitGroup = await _unitOfWork.SplitGroups.GetWithDetailsAsync(
++                splitGroupId, cancellationToken);
++
++            if (splitGroup is null)
++            {
++                return;
++            }
++
++            var allPaid = splitGroup.Participants.All(p => p.Status == SplitParticipantStatus.Paid);
++            var anyPaid = splitGroup.Participants.Any(p => p.Status == SplitParticipantStatus.Paid);
++
++            splitGroup.Status = allPaid
++                ? SplitGroupStatus.Completed
++                : anyPaid
++                    ? SplitGroupStatus.PartiallyPaid
++                    : SplitGroupStatus.Pending;
++
++            if (allPaid)
++            {
++                splitGroup.Payment.Status = PaymentStatus.Completed;
++            }
++        }
++
++        private async Task<SplitGroup> GetAuthorizedSplitGroupAsync(
++            int splitGroupId,
++            int currentUserId,
++            CancellationToken cancellationToken)
++        {
++            var splitGroup = await _unitOfWork.SplitGroups.GetWithDetailsAsync(
++                splitGroupId, cancellationToken);
++
++            if (splitGroup is null)
++            {
++                throw new KeyNotFoundException("Split was not found.");
++            }
++
++            var isInvolved = splitGroup.Payment.UserId == currentUserId ||
++                splitGroup.Participants.Any(p => p.UserId == currentUserId);
++
++            if (!isInvolved)
++            {
++                throw new UnauthorizedAccessException(
++                    "You are not part of this split.");
++            }
++
++            return splitGroup;
++        }
++
++        private static SplitGroupDto ToDto(SplitGroup splitGroup)
++        {
++            return new SplitGroupDto
++            {
++                Id = splitGroup.Id,
++                InitiatorUserId = splitGroup.Payment.UserId,
++                InitiatorUserName = splitGroup.Payment.User.UserName,
++                TotalAmount = splitGroup.Payment.Amount,
++                Currency = splitGroup.Payment.Currency,
++                SplitType = splitGroup.SplitType.ToString(),
++                Status = splitGroup.Status.ToString(),
++                DueDate = splitGroup.DueDate,
++                CreatedAt = splitGroup.CreatedAt,
++                Participants = splitGroup.Participants.Select(p => new SplitParticipantDto
++                {
++                    Id = p.Id,
++                    UserId = p.UserId,
++                    UserName = p.User.UserName,
++                    Amount = p.Amount,
++                    Percentage = p.Percentage,
++                    Status = p.Status.ToString(),
++                    PaidAt = p.PaidAt
++                })
++            };
++        }
++    }
++}
+diff --git a/QuickPay.BLL/Services/Interfaces/ISmartSplitService.cs b/QuickPay.BLL/Services/Interfaces/ISmartSplitService.cs
+new file mode 100644
+index 0000000..2684bc0
+--- /dev/null
++++ b/QuickPay.BLL/Services/Interfaces/ISmartSplitService.cs
+@@ -0,0 +1,32 @@
++﻿using QuickPay.BLL.DTOs.SmartSplit;
++
++namespace QuickPay.BLL.Services.Interfaces
++{
++    public interface ISmartSplitService
++    {
++        Task<IEnumerable<SplitGroupDto>> GetMySplitsAsync(
++            int userId,
++            CancellationToken cancellationToken = default);
++
++        Task<SplitGroupDto> GetDetailsAsync(
++            int splitGroupId,
++            int currentUserId,
++            CancellationToken cancellationToken = default);
++
++        Task<SplitGroupDto> CreateSplitAsync(
++            CreateSplitGroupDto request,
++            CancellationToken cancellationToken = default);
++
++        Task<SplitGroupDto> PayShareAsync(
++            PaySplitShareDto request,
++            CancellationToken cancellationToken = default);
++
++        Task SendReminderAsync(
++            SendSplitReminderDto request,
++            CancellationToken cancellationToken = default);
++
++        Task CancelAsync(
++            CancelSplitGroupDto request,
++            CancellationToken cancellationToken = default);
++    }
++}
+diff --git a/QuickPay.BLL/Services/SplitStrategies/CustomAmountSplitStrategy.cs b/QuickPay.BLL/Services/SplitStrategies/CustomAmountSplitStrategy.cs
+new file mode 100644
+index 0000000..58467a1
+--- /dev/null
++++ b/QuickPay.BLL/Services/SplitStrategies/CustomAmountSplitStrategy.cs
+@@ -0,0 +1,38 @@
++﻿using QuickPay.DAL.Enums;
++
++namespace QuickPay.BLL.Services.SplitStrategies
++{
++    public class CustomAmountSplitStrategy : ISplitStrategy
++    {
++        public SplitType SplitType => SplitType.CustomAmount;
++
++        public IReadOnlyList<SplitShareResult> Calculate(
++            decimal totalAmount,
++            IReadOnlyList<SplitShareInput> participants)
++        {
++            if (participants.Count == 0)
++            {
++                throw new ArgumentException(
++                    "A split needs at least one participant.");
++            }
++
++            if (participants.Any(p => p.Amount is null or <= 0))
++            {
++                throw new ArgumentException(
++                    "Every participant needs a positive custom amount.");
++            }
++
++            var sum = participants.Sum(p => p.Amount!.Value);
++
++            if (Math.Round(sum, 2) != Math.Round(totalAmount, 2))
++            {
++                throw new ArgumentException(
++                    $"Custom amounts add up to {sum:N2}, but the split total is {totalAmount:N2}.");
++            }
++
++            return participants
++                .Select(p => new SplitShareResult(p.UserId, p.Amount!.Value, null))
++                .ToList();
++        }
++    }
++}
+diff --git a/QuickPay.BLL/Services/SplitStrategies/EqualSplitStrategy.cs b/QuickPay.BLL/Services/SplitStrategies/EqualSplitStrategy.cs
+new file mode 100644
+index 0000000..561cb01
+--- /dev/null
++++ b/QuickPay.BLL/Services/SplitStrategies/EqualSplitStrategy.cs
+@@ -0,0 +1,37 @@
++﻿using QuickPay.DAL.Enums;
++
++namespace QuickPay.BLL.Services.SplitStrategies
++{
++    public class EqualSplitStrategy : ISplitStrategy
++    {
++        public SplitType SplitType => SplitType.Equal;
++
++        public IReadOnlyList<SplitShareResult> Calculate(
++            decimal totalAmount,
++            IReadOnlyList<SplitShareInput> participants)
++        {
++            if (participants.Count == 0)
++            {
++                throw new ArgumentException(
++                    "A split needs at least one participant.");
++            }
++
++            // Split into whole cents, then hand out the leftover cents one
++            // at a time so the shares always sum exactly to totalAmount.
++            var totalCents = (long)Math.Round(totalAmount * 100m, 0, MidpointRounding.AwayFromZero);
++            var baseCents = totalCents / participants.Count;
++            var remainderCents = totalCents % participants.Count;
++
++            var results = new List<SplitShareResult>(participants.Count);
++
++            for (var i = 0; i < participants.Count; i++)
++            {
++                var cents = baseCents + (i < remainderCents ? 1 : 0);
++                results.Add(new SplitShareResult(
++                    participants[i].UserId, cents / 100m, null));
++            }
++
++            return results;
++        }
++    }
++}
+diff --git a/QuickPay.BLL/Services/SplitStrategies/ISplitStrategy.cs b/QuickPay.BLL/Services/SplitStrategies/ISplitStrategy.cs
+new file mode 100644
+index 0000000..8de410a
+--- /dev/null
++++ b/QuickPay.BLL/Services/SplitStrategies/ISplitStrategy.cs
+@@ -0,0 +1,25 @@
++﻿using QuickPay.DAL.Enums;
++
++namespace QuickPay.BLL.Services.SplitStrategies
++{
++    /// <summary>One share of a split, before it's tied to a resolved user.</summary>
++    public record SplitShareInput(int UserId, decimal? Amount, decimal? Percentage);
++
++    public record SplitShareResult(int UserId, decimal Amount, decimal? Percentage);
++
++    public interface ISplitStrategy
++    {
++        SplitType SplitType { get; }
++
++        /// <summary>
++        /// Turns a total amount + raw participant input into concrete
++        /// per-person amounts. Throws ArgumentException if the input is
++        /// invalid for this split type (e.g. percentages don't add to 100).
++        /// The returned amounts always sum exactly to totalAmount (any
++        /// rounding remainder is distributed cent-by-cent).
++        /// </summary>
++        IReadOnlyList<SplitShareResult> Calculate(
++            decimal totalAmount,
++            IReadOnlyList<SplitShareInput> participants);
++    }
++}
+diff --git a/QuickPay.BLL/Services/SplitStrategies/PercentageSplitStrategy.cs b/QuickPay.BLL/Services/SplitStrategies/PercentageSplitStrategy.cs
+new file mode 100644
+index 0000000..0bcc186
+--- /dev/null
++++ b/QuickPay.BLL/Services/SplitStrategies/PercentageSplitStrategy.cs
+@@ -0,0 +1,63 @@
++﻿using QuickPay.DAL.Enums;
++
++namespace QuickPay.BLL.Services.SplitStrategies
++{
++    public class PercentageSplitStrategy : ISplitStrategy
++    {
++        public SplitType SplitType => SplitType.Percentage;
++
++        public IReadOnlyList<SplitShareResult> Calculate(
++            decimal totalAmount,
++            IReadOnlyList<SplitShareInput> participants)
++        {
++            if (participants.Count == 0)
++            {
++                throw new ArgumentException(
++                    "A split needs at least one participant.");
++            }
++
++            if (participants.Any(p => p.Percentage is null or <= 0))
++            {
++                throw new ArgumentException(
++                    "Every participant needs a positive percentage.");
++            }
++
++            var totalPercentage = participants.Sum(p => p.Percentage!.Value);
++
++            if (Math.Round(totalPercentage, 2) != 100m)
++            {
++                throw new ArgumentException(
++                    $"Percentages add up to {totalPercentage:N2}%, they must add up to 100%.");
++            }
++
++            var totalCents = (long)Math.Round(totalAmount * 100m, 0, MidpointRounding.AwayFromZero);
++            var results = new List<SplitShareResult>(participants.Count);
++            long assignedCents = 0;
++
++            for (var i = 0; i < participants.Count; i++)
++            {
++                long cents;
++
++                if (i == participants.Count - 1)
++                {
++                    // Last participant absorbs the rounding remainder so
++                    // the shares always sum exactly to totalAmount.
++                    cents = totalCents - assignedCents;
++                }
++                else
++                {
++                    cents = (long)Math.Round(
++                        totalCents * (participants[i].Percentage!.Value / 100m),
++                        0,
++                        MidpointRounding.AwayFromZero);
++                    assignedCents += cents;
++                }
++
++                results.Add(new SplitShareResult(
++                    participants[i].UserId, cents / 100m, participants[i].Percentage));
++            }
++
++            return results;
++        }
++    }
++}
+diff --git a/QuickPay.BLL/Services/SplitStrategies/SplitStrategyFactory.cs b/QuickPay.BLL/Services/SplitStrategies/SplitStrategyFactory.cs
+new file mode 100644
+index 0000000..a179460
+--- /dev/null
++++ b/QuickPay.BLL/Services/SplitStrategies/SplitStrategyFactory.cs
+@@ -0,0 +1,29 @@
++﻿using QuickPay.DAL.Enums;
++
++namespace QuickPay.BLL.Services.SplitStrategies
++{
++    public interface ISplitStrategyFactory
++    {
++        ISplitStrategy Resolve(SplitType splitType);
++    }
++
++    public class SplitStrategyFactory : ISplitStrategyFactory
++    {
++        private readonly IReadOnlyDictionary<SplitType, ISplitStrategy> _strategies;
++
++        public SplitStrategyFactory(IEnumerable<ISplitStrategy> strategies)
++        {
++            _strategies = strategies.ToDictionary(s => s.SplitType);
++        }
++
++        public ISplitStrategy Resolve(SplitType splitType)
++        {
++            if (!_strategies.TryGetValue(splitType, out var strategy))
++            {
++                throw new ArgumentException($"Unsupported split type: {splitType}.");
++            }
++
++            return strategy;
++        }
++    }
++}
+diff --git a/QuickPay.DAL/Configurations/PaymentConfiguration.cs b/QuickPay.DAL/Configurations/PaymentConfiguration.cs
+index 522c60b..facfe22 100644
+--- a/QuickPay.DAL/Configurations/PaymentConfiguration.cs
++++ b/QuickPay.DAL/Configurations/PaymentConfiguration.cs
+@@ -35,6 +35,11 @@ namespace QuickPay.DAL.Configurations
+                 .HasForeignKey(x => x.UserId)
+                 .OnDelete(DeleteBehavior.Restrict);
+ 
++            builder.HasOne(x => x.SettlementWallet)
++                .WithMany()
++                .HasForeignKey(x => x.SettlementWalletId)
++                .OnDelete(DeleteBehavior.Restrict);
++
+             builder.HasOne(x => x.SplitGroup)
+                 .WithOne(x => x.Payment)
+                 .HasForeignKey<SplitGroup>(x => x.PaymentId)
+diff --git a/QuickPay.DAL/Configurations/SplitGroupConfiguration.cs b/QuickPay.DAL/Configurations/SplitGroupConfiguration.cs
+index 0ff5ab0..d3790bc 100644
+--- a/QuickPay.DAL/Configurations/SplitGroupConfiguration.cs
++++ b/QuickPay.DAL/Configurations/SplitGroupConfiguration.cs
+@@ -22,9 +22,10 @@ namespace QuickPay.DAL.Configurations
+             builder.Property(x => x.SplitType)
+                 .IsRequired();
+ 
+-            builder.Property(x => x.DueDate)
+-                .IsRequired();
+-
++            // DueDate is optional (DateTime? on the entity) - a required
++            // NOT NULL column here would force every split to have a due
++            // date, contradicting the CLR type. Nullable columns are
++            // optional by convention, so no explicit call is needed.
+             builder.Property(x => x.CreatedAt)
+                 .IsRequired();
+ 
+diff --git a/QuickPay.DAL/Entities/Payment.cs b/QuickPay.DAL/Entities/Payment.cs
+index 0fb1fb2..c47ac21 100644
+--- a/QuickPay.DAL/Entities/Payment.cs
++++ b/QuickPay.DAL/Entities/Payment.cs
+@@ -15,6 +15,12 @@ namespace QuickPay.DAL.Entities
+ 
+         public PaymentStatus Status { get; set; }
+ 
++        // Which of the initiator's own wallets collects the participants'
++        // shares as they pay in.
++        public int SettlementWalletId { get; set; }
++
++        public Wallet SettlementWallet { get; set; } = null!;
++
+ 
+         public SplitGroup? SplitGroup { get; set; }
+ 
+diff --git a/QuickPay.DAL/Repositries/Implementaion/PaymentRepository.cs b/QuickPay.DAL/Repositries/Implementaion/PaymentRepository.cs
+new file mode 100644
+index 0000000..ca62021
+--- /dev/null
++++ b/QuickPay.DAL/Repositries/Implementaion/PaymentRepository.cs
+@@ -0,0 +1,33 @@
++﻿using Microsoft.EntityFrameworkCore;
++using QuickPay.DAL.Entities;
++using QuickPay.DAL.Repositries.Interfaces;
++
++namespace QuickPay.DAL.Repositries.Implementaion
++{
++    public class PaymentRepository : IPaymentRepository
++    {
++        private readonly QuickPayDbContext _context;
++
++        public PaymentRepository(QuickPayDbContext context)
++        {
++            _context = context;
++        }
++
++        public async Task<Payment?> GetByIdAsync(
++            int id,
++            CancellationToken cancellationToken = default)
++        {
++            return await _context.Payments
++                .Include(x => x.User)
++                .Include(x => x.SettlementWallet)
++                .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
++        }
++
++        public async Task AddAsync(
++            Payment payment,
++            CancellationToken cancellationToken = default)
++        {
++            await _context.Payments.AddAsync(payment, cancellationToken);
++        }
++    }
++}
+diff --git a/QuickPay.DAL/Repositries/Implementaion/SplitGroupRepository.cs b/QuickPay.DAL/Repositries/Implementaion/SplitGroupRepository.cs
+new file mode 100644
+index 0000000..de97185
+--- /dev/null
++++ b/QuickPay.DAL/Repositries/Implementaion/SplitGroupRepository.cs
+@@ -0,0 +1,55 @@
++﻿using Microsoft.EntityFrameworkCore;
++using QuickPay.DAL.Entities;
++using QuickPay.DAL.Repositries.Interfaces;
++
++namespace QuickPay.DAL.Repositries.Implementaion
++{
++    public class SplitGroupRepository : ISplitGroupRepository
++    {
++        private readonly QuickPayDbContext _context;
++
++        public SplitGroupRepository(QuickPayDbContext context)
++        {
++            _context = context;
++        }
++
++        public async Task<SplitGroup?> GetWithDetailsAsync(
++            int id,
++            CancellationToken cancellationToken = default)
++        {
++            return await _context.Set<SplitGroup>()
++                .Include(x => x.Payment)
++                    .ThenInclude(p => p.User)
++                .Include(x => x.Payment)
++                    .ThenInclude(p => p.SettlementWallet)
++                .Include(x => x.Participants)
++                    .ThenInclude(p => p.User)
++                .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
++        }
++
++        public async Task<IEnumerable<SplitGroup>> GetForUserAsync(
++            int userId,
++            CancellationToken cancellationToken = default)
++        {
++            return await _context.Set<SplitGroup>()
++                .Include(x => x.Payment)
++                    .ThenInclude(p => p.User)
++                .Include(x => x.Participants)
++                    .ThenInclude(p => p.User)
++                .Where(x =>
++                    x.Payment.UserId == userId ||
++                    x.Participants.Any(p => p.UserId == userId))
++                .OrderByDescending(x => x.CreatedAt)
++                .AsNoTracking()
++                .ToListAsync(cancellationToken);
++        }
++
++        public async Task AddAsync(
++            SplitGroup splitGroup,
++            CancellationToken cancellationToken = default)
++        {
++            await _context.Set<SplitGroup>()
++                .AddAsync(splitGroup, cancellationToken);
++        }
++    }
++}
+diff --git a/QuickPay.DAL/Repositries/Implementaion/SplitParticipantRepository.cs b/QuickPay.DAL/Repositries/Implementaion/SplitParticipantRepository.cs
+new file mode 100644
+index 0000000..6f69e94
+--- /dev/null
++++ b/QuickPay.DAL/Repositries/Implementaion/SplitParticipantRepository.cs
+@@ -0,0 +1,37 @@
++﻿using Microsoft.EntityFrameworkCore;
++using QuickPay.DAL.Entities;
++using QuickPay.DAL.Repositries.Interfaces;
++
++namespace QuickPay.DAL.Repositries.Implementaion
++{
++    public class SplitParticipantRepository : ISplitParticipantRepository
++    {
++        private readonly QuickPayDbContext _context;
++
++        public SplitParticipantRepository(QuickPayDbContext context)
++        {
++            _context = context;
++        }
++
++        public async Task<SplitParticipant?> GetAsync(
++            int splitGroupId,
++            int userId,
++            CancellationToken cancellationToken = default)
++        {
++            return await _context.Set<SplitParticipant>()
++                .Include(x => x.SplitGroup)
++                    .ThenInclude(g => g.Payment)
++                .FirstOrDefaultAsync(
++                    x => x.SplitGroupId == splitGroupId && x.UserId == userId,
++                    cancellationToken);
++        }
++
++        public async Task AddRangeAsync(
++            IEnumerable<SplitParticipant> participants,
++            CancellationToken cancellationToken = default)
++        {
++            await _context.Set<SplitParticipant>()
++                .AddRangeAsync(participants, cancellationToken);
++        }
++    }
++}
+diff --git a/QuickPay.DAL/Repositries/Implementaion/UserRepository.cs b/QuickPay.DAL/Repositries/Implementaion/UserRepository.cs
+index b9f02ea..0dd4399 100644
+--- a/QuickPay.DAL/Repositries/Implementaion/UserRepository.cs
++++ b/QuickPay.DAL/Repositries/Implementaion/UserRepository.cs
+@@ -31,6 +31,18 @@ namespace QuickPay.DAL.Repositries.Implementaion
+                     cancellationToken);
+         }
+ 
++        public async Task<User?> GetByIdentifierAsync(
++            string identifier,
++            CancellationToken cancellationToken = default)
++        {
++            return await _context.Users
++                .FirstOrDefaultAsync(
++                    x => x.UserName == identifier ||
++                         x.Email == identifier ||
++                         x.PhoneNumber == identifier,
++                    cancellationToken);
++        }
++
+         public async Task<bool> ExistsByEmailAsync(
+             string email,
+             CancellationToken cancellationToken = default)
+diff --git a/QuickPay.DAL/Repositries/Interfaces/IPaymentRepository.cs b/QuickPay.DAL/Repositries/Interfaces/IPaymentRepository.cs
+new file mode 100644
+index 0000000..320db55
+--- /dev/null
++++ b/QuickPay.DAL/Repositries/Interfaces/IPaymentRepository.cs
+@@ -0,0 +1,15 @@
++﻿using QuickPay.DAL.Entities;
++
++namespace QuickPay.DAL.Repositries.Interfaces
++{
++    public interface IPaymentRepository
++    {
++        Task<Payment?> GetByIdAsync(
++            int id,
++            CancellationToken cancellationToken = default);
++
++        Task AddAsync(
++            Payment payment,
++            CancellationToken cancellationToken = default);
++    }
++}
+diff --git a/QuickPay.DAL/Repositries/Interfaces/ISplitGroupRepository.cs b/QuickPay.DAL/Repositries/Interfaces/ISplitGroupRepository.cs
+new file mode 100644
+index 0000000..7f456c3
+--- /dev/null
++++ b/QuickPay.DAL/Repositries/Interfaces/ISplitGroupRepository.cs
+@@ -0,0 +1,21 @@
++﻿using QuickPay.DAL.Entities;
++
++namespace QuickPay.DAL.Repositries.Interfaces
++{
++    public interface ISplitGroupRepository
++    {
++        /// <summary>Includes Payment (+ SettlementWallet + initiator User) and Participants (+ User).</summary>
++        Task<SplitGroup?> GetWithDetailsAsync(
++            int id,
++            CancellationToken cancellationToken = default);
++
++        /// <summary>Splits where the user is either the initiator or a participant.</summary>
++        Task<IEnumerable<SplitGroup>> GetForUserAsync(
++            int userId,
++            CancellationToken cancellationToken = default);
++
++        Task AddAsync(
++            SplitGroup splitGroup,
++            CancellationToken cancellationToken = default);
++    }
++}
+diff --git a/QuickPay.DAL/Repositries/Interfaces/ISplitParticipantRepository.cs b/QuickPay.DAL/Repositries/Interfaces/ISplitParticipantRepository.cs
+new file mode 100644
+index 0000000..b67fb05
+--- /dev/null
++++ b/QuickPay.DAL/Repositries/Interfaces/ISplitParticipantRepository.cs
+@@ -0,0 +1,16 @@
++﻿using QuickPay.DAL.Entities;
++
++namespace QuickPay.DAL.Repositries.Interfaces
++{
++    public interface ISplitParticipantRepository
++    {
++        Task<SplitParticipant?> GetAsync(
++            int splitGroupId,
++            int userId,
++            CancellationToken cancellationToken = default);
++
++        Task AddRangeAsync(
++            IEnumerable<SplitParticipant> participants,
++            CancellationToken cancellationToken = default);
++    }
++}
+diff --git a/QuickPay.DAL/Repositries/Interfaces/IUserRepository.cs b/QuickPay.DAL/Repositries/Interfaces/IUserRepository.cs
+index 2f641b0..58f6092 100644
+--- a/QuickPay.DAL/Repositries/Interfaces/IUserRepository.cs
++++ b/QuickPay.DAL/Repositries/Interfaces/IUserRepository.cs
+@@ -12,6 +12,11 @@ namespace QuickPay.DAL.Repositries.Interfaces
+             string email,
+             CancellationToken cancellationToken = default);
+ 
++        /// <summary>Used to resolve a person by username, phone, or email.</summary>
++        Task<User?> GetByIdentifierAsync(
++            string identifier,
++            CancellationToken cancellationToken = default);
++
+         Task<bool> ExistsByEmailAsync(
+             string email,
+             CancellationToken cancellationToken = default);
+diff --git a/QuickPay.DAL/UnitOfWork/IUnitOfWork.cs b/QuickPay.DAL/UnitOfWork/IUnitOfWork.cs
+index 25a3bca..c7329db 100644
+--- a/QuickPay.DAL/UnitOfWork/IUnitOfWork.cs
++++ b/QuickPay.DAL/UnitOfWork/IUnitOfWork.cs
+@@ -19,6 +19,12 @@ namespace QuickPay.DAL.UnitOfWork
+ 
+         IWalletRepository Wallets { get; }
+ 
++        IPaymentRepository Payments { get; }
++
++        ISplitGroupRepository SplitGroups { get; }
++
++        ISplitParticipantRepository SplitParticipants { get; }
++
+         INotificationRepository Notifications { get; }
+ 
+         Task<int> SaveChangesAsync(
+diff --git a/QuickPay.DAL/UnitOfWork/UnitOfWork.cs b/QuickPay.DAL/UnitOfWork/UnitOfWork.cs
+index 7e9bc44..894af6b 100644
+--- a/QuickPay.DAL/UnitOfWork/UnitOfWork.cs
++++ b/QuickPay.DAL/UnitOfWork/UnitOfWork.cs
+@@ -26,11 +26,20 @@ namespace QuickPay.DAL.UnitOfWork
+ 
+         public IWalletRepository Wallets { get; }
+ 
++        public IPaymentRepository Payments { get; }
++
++        public ISplitGroupRepository SplitGroups { get; }
++
++        public ISplitParticipantRepository SplitParticipants { get; }
++
+         public UnitOfWork(
+             QuickPayDbContext context,
+             ITransactionRepository transactionRepository,
+             IFinancialAccountRepository financialAccountRepository,
+             IWalletRepository walletRepository,
++            IPaymentRepository paymentRepository,
++            ISplitGroupRepository splitGroupRepository,
++            ISplitParticipantRepository splitParticipantRepository,
+             IUserRepository userRepository,
+             IRefreshTokenRepository refreshTokenRepository,
+             IOtpCodeRepository otpCodeRepository,
+@@ -41,6 +50,9 @@ namespace QuickPay.DAL.UnitOfWork
+             Transactions = transactionRepository;
+             FinancialAccounts = financialAccountRepository;
+             Wallets = walletRepository;
++            Payments = paymentRepository;
++            SplitGroups = splitGroupRepository;
++            SplitParticipants = splitParticipantRepository;
+ 
+             Users = userRepository;
+             RefreshTokens = refreshTokenRepository;
+diff --git a/QuickPay.PL/Controllers/SmartSplitController.cs b/QuickPay.PL/Controllers/SmartSplitController.cs
+new file mode 100644
+index 0000000..9f9399f
+--- /dev/null
++++ b/QuickPay.PL/Controllers/SmartSplitController.cs
+@@ -0,0 +1,253 @@
++﻿using Microsoft.AspNetCore.Authorization;
++using Microsoft.AspNetCore.Mvc;
++using QuickPay.BLL.DTOs.SmartSplit;
++using QuickPay.BLL.Services.Interfaces;
++
++namespace QuickPay.PL.Controllers
++{
++    [Authorize]
++    public class SmartSplitController : Controller
++    {
++        private readonly ISmartSplitService _smartSplitService;
++        private readonly IWalletService _walletService;
++        private readonly ICurrentUserService _currentUserService;
++
++        public SmartSplitController(
++            ISmartSplitService smartSplitService,
++            IWalletService walletService,
++            ICurrentUserService currentUserService)
++        {
++            _smartSplitService = smartSplitService;
++            _walletService = walletService;
++            _currentUserService = currentUserService;
++        }
++
++        [HttpGet]
++        public async Task<IActionResult> Index(CancellationToken cancellationToken)
++        {
++            var userId = _currentUserService.GetCurrentUserId();
++
++            var splits = await _smartSplitService.GetMySplitsAsync(
++                userId, cancellationToken);
++
++            return View(splits);
++        }
++
++        [HttpGet]
++        public async Task<IActionResult> Details(
++            int id, CancellationToken cancellationToken)
++        {
++            var userId = _currentUserService.GetCurrentUserId();
++
++            try
++            {
++                var split = await _smartSplitService.GetDetailsAsync(
++                    id, userId, cancellationToken);
++
++                ViewBag.CurrentUserId = userId;
++                ViewBag.MyWallets = await _walletService.GetMyWalletsAsync(
++                    userId, cancellationToken);
++
++                return View(split);
++            }
++            catch (KeyNotFoundException)
++            {
++                return NotFound();
++            }
++            catch (UnauthorizedAccessException)
++            {
++                return Forbid();
++            }
++        }
++
++        [HttpGet]
++        public async Task<IActionResult> Create(CancellationToken cancellationToken)
++        {
++            var userId = _currentUserService.GetCurrentUserId();
++
++            ViewBag.MyWallets = await _walletService.GetMyWalletsAsync(
++                userId, cancellationToken);
++
++            return View();
++        }
++
++        [HttpPost]
++        [ValidateAntiForgeryToken]
++        public async Task<IActionResult> Create(
++            int settlementWalletId,
++            decimal totalAmount,
++            string splitType,
++            DateTime? dueDate,
++            string? description,
++            // One line per participant, format depends on splitType:
++            //   Equal:        identifier
++            //   CustomAmount: identifier,amount
++            //   Percentage:   identifier,percentage
++            string participantLines,
++            CancellationToken cancellationToken)
++        {
++            var userId = _currentUserService.GetCurrentUserId();
++
++            var participants = ParseParticipantLines(participantLines, splitType);
++
++            try
++            {
++                var split = await _smartSplitService.CreateSplitAsync(
++                    new CreateSplitGroupDto
++                    {
++                        CurrentUserId = userId,
++                        SettlementWalletId = settlementWalletId,
++                        TotalAmount = totalAmount,
++                        SplitType = splitType,
++                        DueDate = dueDate,
++                        Description = description,
++                        Participants = participants
++                    },
++                    cancellationToken);
++
++                TempData["SuccessMessage"] = "Split created.";
++
++                return RedirectToAction(nameof(Details), new { id = split.Id });
++            }
++            catch (Exception ex) when (
++                ex is ArgumentException or
++                KeyNotFoundException or
++                UnauthorizedAccessException)
++            {
++                ModelState.AddModelError(string.Empty, ex.Message);
++                ViewBag.MyWallets = await _walletService.GetMyWalletsAsync(
++                    userId, cancellationToken);
++                return View();
++            }
++        }
++
++        [HttpPost]
++        [ValidateAntiForgeryToken]
++        public async Task<IActionResult> Pay(
++            int id, int fromWalletId, CancellationToken cancellationToken)
++        {
++            var userId = _currentUserService.GetCurrentUserId();
++
++            try
++            {
++                await _smartSplitService.PayShareAsync(
++                    new PaySplitShareDto
++                    {
++                        SplitGroupId = id,
++                        CurrentUserId = userId,
++                        FromWalletId = fromWalletId
++                    },
++                    cancellationToken);
++
++                TempData["SuccessMessage"] = "Your share was paid.";
++            }
++            catch (Exception ex) when (
++                ex is ArgumentException or
++                KeyNotFoundException or
++                UnauthorizedAccessException or
++                InvalidOperationException)
++            {
++                TempData["ErrorMessage"] = ex.Message;
++            }
++
++            return RedirectToAction(nameof(Details), new { id });
++        }
++
++        [HttpPost]
++        [ValidateAntiForgeryToken]
++        public async Task<IActionResult> Remind(
++            int id, int? participantUserId, CancellationToken cancellationToken)
++        {
++            var userId = _currentUserService.GetCurrentUserId();
++
++            try
++            {
++                await _smartSplitService.SendReminderAsync(
++                    new SendSplitReminderDto
++                    {
++                        SplitGroupId = id,
++                        CurrentUserId = userId,
++                        ParticipantUserId = participantUserId
++                    },
++                    cancellationToken);
++
++                TempData["SuccessMessage"] = "Reminder sent.";
++            }
++            catch (Exception ex) when (
++                ex is KeyNotFoundException or
++                UnauthorizedAccessException or
++                InvalidOperationException)
++            {
++                TempData["ErrorMessage"] = ex.Message;
++            }
++
++            return RedirectToAction(nameof(Details), new { id });
++        }
++
++        [HttpPost]
++        [ValidateAntiForgeryToken]
++        public async Task<IActionResult> Cancel(
++            int id, CancellationToken cancellationToken)
++        {
++            var userId = _currentUserService.GetCurrentUserId();
++
++            try
++            {
++                await _smartSplitService.CancelAsync(
++                    new CancelSplitGroupDto
++                    {
++                        SplitGroupId = id,
++                        CurrentUserId = userId
++                    },
++                    cancellationToken);
++
++                TempData["SuccessMessage"] = "Split cancelled.";
++            }
++            catch (Exception ex) when (
++                ex is KeyNotFoundException or
++                UnauthorizedAccessException or
++                InvalidOperationException)
++            {
++                TempData["ErrorMessage"] = ex.Message;
++            }
++
++            return RedirectToAction(nameof(Details), new { id });
++        }
++
++        private static List<SplitParticipantInputDto> ParseParticipantLines(
++            string participantLines, string splitType)
++        {
++            var result = new List<SplitParticipantInputDto>();
++
++            if (string.IsNullOrWhiteSpace(participantLines))
++            {
++                return result;
++            }
++
++            var lines = participantLines
++                .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
++
++            foreach (var line in lines)
++            {
++                var parts = line.Split(',', StringSplitOptions.TrimEntries);
++                var input = new SplitParticipantInputDto { Identifier = parts[0] };
++
++                if (splitType == "CustomAmount" && parts.Length > 1 &&
++                    decimal.TryParse(parts[1], out var amount))
++                {
++                    input.Amount = amount;
++                }
++
++                if (splitType == "Percentage" && parts.Length > 1 &&
++                    decimal.TryParse(parts[1], out var percentage))
++                {
++                    input.Percentage = percentage;
++                }
++
++                result.Add(input);
++            }
++
++            return result;
++        }
++    }
++}
+diff --git a/QuickPay.PL/Program.cs b/QuickPay.PL/Program.cs
+index c40cac5..6b0b324 100644
+--- a/QuickPay.PL/Program.cs
++++ b/QuickPay.PL/Program.cs
+@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
+ using QuickPay.BLL.AutoMapper;
+ using QuickPay.BLL.Services.Implementation;
+ using QuickPay.BLL.Services.Interfaces;
++using QuickPay.BLL.Services.SplitStrategies;
+ using QuickPay.BLL.Settings;
+ using QuickPay.DAL;
+ using QuickPay.DAL.Repositries.Implementaion;
+@@ -34,6 +35,9 @@ builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+ builder.Services.AddScoped<IFinancialAccountRepository, FinancialAccountRepository>();
+ builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+ builder.Services.AddScoped<IWalletRepository, WalletRepository>();
++builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
++builder.Services.AddScoped<ISplitGroupRepository, SplitGroupRepository>();
++builder.Services.AddScoped<ISplitParticipantRepository, SplitParticipantRepository>();
+ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+ builder.Services.AddHttpContextAccessor();
+ 
+@@ -53,6 +57,11 @@ builder.Services.AddScoped<IRealtimeNotifier, SignalRNotifier>();
+ builder.Services.AddScoped<INotificationService, NotificationService>();
+ builder.Services.AddScoped<ITransactionHistoryService, TransactionHistoryService>();
+ builder.Services.AddScoped<IWalletService, WalletService>();
++builder.Services.AddScoped<ISmartSplitService, SmartSplitService>();
++builder.Services.AddScoped<ISplitStrategy, EqualSplitStrategy>();
++builder.Services.AddScoped<ISplitStrategy, CustomAmountSplitStrategy>();
++builder.Services.AddScoped<ISplitStrategy, PercentageSplitStrategy>();
++builder.Services.AddScoped<ISplitStrategyFactory, SplitStrategyFactory>();
+ 
+ builder.Services.AddAutoMapper(m => m.AddProfile<AuthProfile>());
+ builder.Services.AddAutoMapper(m => m.AddProfile<TransferProfile>());
+diff --git a/QuickPay.PL/Views/Shared/_Layout.cshtml b/QuickPay.PL/Views/Shared/_Layout.cshtml
+index 60f3342..27c6b23 100644
+--- a/QuickPay.PL/Views/Shared/_Layout.cshtml
++++ b/QuickPay.PL/Views/Shared/_Layout.cshtml
+@@ -29,6 +29,9 @@
+                         <li class="nav-item">
+                             <a class="nav-link" asp-area="" asp-controller="Transfer" asp-action="Index">Transfer</a>
+                         </li>
++                        <li class="nav-item">
++                            <a class="nav-link" asp-area="" asp-controller="SmartSplit" asp-action="Index">Smart Split</a>
++                        </li>
+                         <li class="nav-item">
+                             <a class="nav-link" asp-area="" asp-controller="TransactionHistory" asp-action="Index">History</a>
+                         </li>
+diff --git a/QuickPay.PL/Views/SmartSplit/Create.cshtml b/QuickPay.PL/Views/SmartSplit/Create.cshtml
+new file mode 100644
+index 0000000..e386fef
+--- /dev/null
++++ b/QuickPay.PL/Views/SmartSplit/Create.cshtml
+@@ -0,0 +1,81 @@
++@using QuickPay.BLL.DTOs
++@{
++    ViewData["Title"] = "New Split";
++    var myWallets = (IEnumerable<WalletDto>)ViewBag.MyWallets;
++}
++
++<div class="container py-5">
++    <div class="row justify-content-center">
++        <div class="col-md-7">
++
++            <h2 class="mb-4">New Split</h2>
++
++            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
++
++            <form asp-action="Create" method="post">
++                @Html.AntiForgeryToken()
++
++                <div class="mb-3">
++                    <label class="form-label">Settle into wallet</label>
++                    <select name="settlementWalletId" class="form-select" required>
++                        @foreach (var wallet in myWallets)
++                        {
++                            <option value="@wallet.Id">@wallet.Name (@wallet.Balance.ToString("N2") @wallet.Currency)</option>
++                        }
++                    </select>
++                    <div class="form-text">Participants' payments land here.</div>
++                </div>
++
++                <div class="mb-3">
++                    <label class="form-label">Total Amount (EGP)</label>
++                    <input type="number" step="0.01" min="0.01" name="totalAmount" class="form-control" required />
++                </div>
++
++                <div class="mb-3">
++                    <label class="form-label">Split Type</label>
++                    <select name="splitType" id="splitType" class="form-select" onchange="updateHint()">
++                        <option value="Equal">Equal - split evenly</option>
++                        <option value="CustomAmount">Custom Amount - you set each person's amount</option>
++                        <option value="Percentage">Percentage - you set each person's %</option>
++                    </select>
++                </div>
++
++                <div class="mb-3">
++                    <label class="form-label">Participants (one per line)</label>
++                    <textarea name="participantLines" class="form-control" rows="5"
++                              placeholder="username, phone, or email"></textarea>
++                    <div id="participantHint" class="form-text">
++                        Equal split: just one identifier per line, e.g. <code>sara_2001</code>
++                    </div>
++                </div>
++
++                <div class="mb-3">
++                    <label class="form-label">Due Date (optional)</label>
++                    <input type="date" name="dueDate" class="form-control" />
++                </div>
++
++                <div class="mb-3">
++                    <label class="form-label">Note (optional)</label>
++                    <input type="text" name="description" class="form-control" placeholder="e.g. Dinner at Zooba" />
++                </div>
++
++                <button type="submit" class="btn btn-primary w-100">Create Split</button>
++            </form>
++
++        </div>
++    </div>
++</div>
++
++<script>
++    function updateHint() {
++        var type = document.getElementById('splitType').value;
++        var hint = document.getElementById('participantHint');
++        if (type === 'CustomAmount') {
++            hint.innerHTML = 'One per line as <code>identifier, amount</code>, e.g. <code>sara_2001, 50.00</code>. Amounts must add up to the total.';
++        } else if (type === 'Percentage') {
++            hint.innerHTML = 'One per line as <code>identifier, percentage</code>, e.g. <code>sara_2001, 25</code>. Percentages must add up to 100.';
++        } else {
++            hint.innerHTML = 'Equal split: just one identifier per line, e.g. <code>sara_2001</code>';
++        }
++    }
++</script>
+diff --git a/QuickPay.PL/Views/SmartSplit/Details.cshtml b/QuickPay.PL/Views/SmartSplit/Details.cshtml
+new file mode 100644
+index 0000000..f74fba7
+--- /dev/null
++++ b/QuickPay.PL/Views/SmartSplit/Details.cshtml
+@@ -0,0 +1,123 @@
++@using QuickPay.BLL.DTOs
++@using QuickPay.BLL.DTOs.SmartSplit
++@model SplitGroupDto
++
++@{
++    ViewData["Title"] = "Split Details";
++    var currentUserId = (int)ViewBag.CurrentUserId;
++    var myWallets = (IEnumerable<WalletDto>)ViewBag.MyWallets;
++    var isInitiator = Model.InitiatorUserId == currentUserId;
++    var myShare = Model.Participants.FirstOrDefault(p => p.UserId == currentUserId);
++}
++
++<div class="container py-5">
++    <div class="row justify-content-center">
++        <div class="col-md-7">
++
++            @if (TempData["SuccessMessage"] is not null)
++            {
++                <div class="alert alert-success">@TempData["SuccessMessage"]</div>
++            }
++            @if (TempData["ErrorMessage"] is not null)
++            {
++                <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
++            }
++
++            <div class="card shadow-sm mb-4">
++                <div class="card-body p-4">
++                    <div class="d-flex justify-content-between align-items-start">
++                        <div>
++                            <h2 class="mb-1">@Model.TotalAmount.ToString("N2") @Model.Currency</h2>
++                            <span class="text-muted">by @Model.InitiatorUserName &middot; @Model.SplitType split</span>
++                        </div>
++                        <span class="badge @(Model.Status switch {
++                            "Completed" => "bg-success",
++                            "Cancelled" => "bg-secondary",
++                            "PartiallyPaid" => "bg-warning text-dark",
++                            _ => "bg-light text-dark"
++                        }) fs-6">@Model.Status</span>
++                    </div>
++
++                    @if (Model.DueDate is not null)
++                    {
++                        <p class="text-muted small mt-2 mb-0">Due @Model.DueDate.Value.ToString("MMM d, yyyy")</p>
++                    }
++
++                    @if (isInitiator && Model.Status == "Pending")
++                    {
++                        <form asp-action="Cancel" method="post" class="mt-3"
++                              onsubmit="return confirm('Cancel this split? Nobody has paid yet.');">
++                            @Html.AntiForgeryToken()
++                            <input type="hidden" name="id" value="@Model.Id" />
++                            <button type="submit" class="btn btn-outline-danger btn-sm">Cancel Split</button>
++                        </form>
++                    }
++                </div>
++            </div>
++
++            @if (myShare is not null && myShare.Status == "Pending" && Model.Status != "Cancelled")
++            {
++                <div class="card shadow-sm mb-4 border-primary">
++                    <div class="card-body p-4">
++                        <h5 class="mb-3">Your share: @myShare.Amount.ToString("N2") @Model.Currency</h5>
++                        <form asp-action="Pay" method="post" class="d-flex gap-2">
++                            @Html.AntiForgeryToken()
++                            <input type="hidden" name="id" value="@Model.Id" />
++                            <select name="fromWalletId" class="form-select">
++                                @foreach (var wallet in myWallets)
++                                {
++                                    <option value="@wallet.Id">@wallet.Name (@wallet.Balance.ToString("N2") @wallet.Currency)</option>
++                                }
++                            </select>
++                            <button type="submit" class="btn btn-primary text-nowrap">Pay My Share</button>
++                        </form>
++                    </div>
++                </div>
++            }
++
++            <div class="card shadow-sm">
++                <div class="card-body p-4">
++                    <h5 class="mb-3">Participants</h5>
++
++                    <table class="table table-sm align-middle">
++                        <tbody>
++                            @foreach (var participant in Model.Participants)
++                            {
++                                <tr>
++                                    <td>@participant.UserName</td>
++                                    <td>@participant.Amount.ToString("N2") @Model.Currency</td>
++                                    <td>
++                                        <span class="badge @(participant.Status == "Paid" ? "bg-success" : "bg-light text-dark")">
++                                            @participant.Status
++                                        </span>
++                                    </td>
++                                    <td class="text-end">
++                                        @if (isInitiator && participant.Status == "Pending")
++                                        {
++                                            <form asp-action="Remind" method="post" class="d-inline">
++                                                @Html.AntiForgeryToken()
++                                                <input type="hidden" name="id" value="@Model.Id" />
++                                                <input type="hidden" name="participantUserId" value="@participant.UserId" />
++                                                <button type="submit" class="btn btn-sm btn-outline-secondary">Remind</button>
++                                            </form>
++                                        }
++                                    </td>
++                                </tr>
++                            }
++                        </tbody>
++                    </table>
++
++                    @if (isInitiator && Model.Participants.Any(p => p.Status == "Pending"))
++                    {
++                        <form asp-action="Remind" method="post">
++                            @Html.AntiForgeryToken()
++                            <input type="hidden" name="id" value="@Model.Id" />
++                            <button type="submit" class="btn btn-outline-secondary btn-sm">Remind Everyone Pending</button>
++                        </form>
++                    }
++                </div>
++            </div>
++
++        </div>
++    </div>
++</div>
+diff --git a/QuickPay.PL/Views/SmartSplit/Index.cshtml b/QuickPay.PL/Views/SmartSplit/Index.cshtml
+new file mode 100644
+index 0000000..6d92918
+--- /dev/null
++++ b/QuickPay.PL/Views/SmartSplit/Index.cshtml
+@@ -0,0 +1,58 @@
++@using QuickPay.BLL.DTOs.SmartSplit
++@model IEnumerable<SplitGroupDto>
++
++@{
++    ViewData["Title"] = "Smart Split";
++}
++
++<div class="container py-5">
++    <div class="row justify-content-center">
++        <div class="col-md-8">
++
++            @if (TempData["SuccessMessage"] is not null)
++            {
++                <div class="alert alert-success">@TempData["SuccessMessage"]</div>
++            }
++            @if (TempData["ErrorMessage"] is not null)
++            {
++                <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
++            }
++
++            <div class="d-flex justify-content-between align-items-center mb-4">
++                <h2 class="mb-0">Smart Split</h2>
++                <a asp-action="Create" class="btn btn-primary">+ New Split</a>
++            </div>
++
++            @if (!Model.Any())
++            {
++                <p class="text-muted">No splits yet.</p>
++            }
++
++            @foreach (var split in Model)
++            {
++                var paidCount = split.Participants.Count(p => p.Status == "Paid");
++                var totalCount = split.Participants.Count();
++
++                <a asp-action="Details" asp-route-id="@split.Id" class="text-decoration-none text-body">
++                    <div class="card shadow-sm mb-3">
++                        <div class="card-body p-4 d-flex justify-content-between align-items-center">
++                            <div>
++                                <h5 class="mb-1">@split.TotalAmount.ToString("N2") @split.Currency</h5>
++                                <span class="text-muted small">
++                                    by @split.InitiatorUserName &middot; @split.SplitType split &middot; @paidCount/@totalCount paid
++                                </span>
++                            </div>
++                            <span class="badge @(split.Status switch {
++                                "Completed" => "bg-success",
++                                "Cancelled" => "bg-secondary",
++                                "PartiallyPaid" => "bg-warning text-dark",
++                                _ => "bg-light text-dark"
++                            })">@split.Status</span>
++                        </div>
++                    </div>
++                </a>
++            }
++
++        </div>
++    </div>
++</div>

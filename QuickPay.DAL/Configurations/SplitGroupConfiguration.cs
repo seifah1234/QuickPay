@@ -22,9 +22,10 @@ namespace QuickPay.DAL.Configurations
             builder.Property(x => x.SplitType)
                 .IsRequired();
 
-            builder.Property(x => x.DueDate)
-                .IsRequired();
-
+            // DueDate is optional (DateTime? on the entity) - a required
+            // NOT NULL column here would force every split to have a due
+            // date, contradicting the CLR type. Nullable columns are
+            // optional by convention, so no explicit call is needed.
             builder.Property(x => x.CreatedAt)
                 .IsRequired();
 
