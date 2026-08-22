@@ -35,6 +35,7 @@ namespace QuickPay.DAL
 
         public DbSet<SplitParticipant> SplitParticipants { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<BankAccount> BankAccounts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

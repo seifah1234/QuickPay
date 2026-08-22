@@ -18,6 +18,9 @@ namespace QuickPay.DAL.UnitOfWork
         public IOtpCodeRepository OtpCodes { get; }
 
         public INotificationRepository Notifications { get; }
+        public IBankAccountRepository BankAccounts { get; }
+
+        public IPaymentGatewayTransactionRepository PaymentGatewayTransactions { get; }
         private IDbContextTransaction? _transaction;
 
         public ITransactionRepository Transactions { get; }
@@ -48,7 +51,9 @@ namespace QuickPay.DAL.UnitOfWork
             IUserRepository userRepository,
             IRefreshTokenRepository refreshTokenRepository,
             IOtpCodeRepository otpCodeRepository,
-            INotificationRepository notificationRepository)
+            INotificationRepository notificationRepository,
+            IBankAccountRepository bankAccountRepository,
+            IPaymentGatewayTransactionRepository paymentGatewayTransactionRepository)
         {
             _context = context;
 
@@ -65,6 +70,9 @@ namespace QuickPay.DAL.UnitOfWork
             RefreshTokens = refreshTokenRepository;
             OtpCodes = otpCodeRepository;
             Notifications = notificationRepository;
+
+            BankAccounts = bankAccountRepository;
+            PaymentGatewayTransactions = paymentGatewayTransactionRepository;
         }
 
         public async Task<int> SaveChangesAsync(
