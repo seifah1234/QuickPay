@@ -1,0 +1,26 @@
+@{
+    ViewData["Title"] = "New Shared Wallet";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+
+            <h2 class="mb-4">New Shared Wallet</h2>
+
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <input type="text" name="name" class="form-control" placeholder="e.g. Trip to Alexandria" required />
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Create</button>
+            </form>
+
+        </div>
+    </div>
+</div>

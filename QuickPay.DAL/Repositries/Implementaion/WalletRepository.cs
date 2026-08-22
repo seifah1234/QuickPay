@@ -29,9 +29,10 @@ namespace QuickPay.DAL.Repositries.Implementaion
             CancellationToken cancellationToken = default)
         {
             return await _context.Set<Wallet>()
-                .Where(w => w.UserId == userId && w.IsActive)
-                .AsNoTracking()
-                .ToListAsync(cancellationToken);
+        .Include(w => w.User)
+        .Where(w => w.UserId == userId && w.IsActive)
+        .AsNoTracking()
+        .ToListAsync(cancellationToken);
         }
 
         public async Task AddAsync(

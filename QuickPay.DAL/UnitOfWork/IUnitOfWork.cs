@@ -19,6 +19,16 @@ namespace QuickPay.DAL.UnitOfWork
 
         IWalletRepository Wallets { get; }
 
+        IPaymentRepository Payments { get; }
+
+        ISplitGroupRepository SplitGroups { get; }
+
+        ISplitParticipantRepository SplitParticipants { get; }
+
+        ISharedWalletRepository SharedWallets { get; }
+
+        ISharedWalletMemberRepository SharedWalletMembers { get; }
+
         INotificationRepository Notifications { get; }
 
 

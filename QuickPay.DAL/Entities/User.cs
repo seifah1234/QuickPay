@@ -23,9 +23,9 @@
         public ICollection<Wallet> Wallets { get; set; }
             = new List<Wallet>();
 
-        public ICollection<SharedWallet> OwnedSharedWallets { get; set; }
-            = new List<SharedWallet>();
-
+        // Ownership of a SharedWallet is expressed via a SharedWalletMember
+        // row with Role == Admin, not a direct FK on SharedWallet (that
+        // column was removed - see the RemoveOwnerColumn migration).
         public ICollection<SharedWalletMember> SharedWalletMemberships { get; set; }
             = new List<SharedWalletMember>();
     }
