@@ -4,70 +4,143 @@
 @{
     ViewData["Title"] = "Transaction History";
     var pageNumber = (int)(ViewBag.PageNumber ?? 1);
+    var pageSize = (int)(ViewBag.PageSize ?? 10);
 }
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h1 class="qp-dashboard-title mb-1">Transaction History</h1>
+            <p class="text-muted mb-0">View all your transactions in one place.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                    <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z" />
+                </svg>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
 
-            <h2 class="mb-4">Transaction History</h2>
-
+    <div class="card">
+        <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
+            <h5 class="mb-0">
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                    <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022l-.074.997Zm2.004.45a7.003 7.003 0 0 0-.985-.299l.219-.976c.383.086.76.2 1.126.342l-.36.933Zm1.37.71a7.01 7.01 0 0 0-.439-.27l.493-.87a8.025 8.025 0 0 1 .979.654l-.615.789a6.996 6.996 0 0 0-.418-.302Zm1.834 1.79a6.99 6.99 0 0 0-.653-.796l.724-.69c.27.285.52.59.747.91l-.818.576ZM12 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" />
+                </svg>
+                All Transactions
+            </h5>
+            <span class="badge bg-primary">@Model.Count() Transactions</span>
+        </div>
+        <div class="card-body p-0">
             @if (!Model.Any())
             {
-                <p class="text-muted">No transactions yet.</p>
-            }
-            else
-            {
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Type</th>
-                            <th>Direction</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var tx in Model)
-                        {
-                            <tr>
-                                <td>@tx.CreatedAt.ToString("g")</td>
-                                <td>@tx.Type</td>
-                                <td>
-                                    <span class="badge @(tx.Direction == "Outgoing" ? "bg-danger" : "bg-success")">
-                                        @tx.Direction
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="amount @(tx.Direction == "Outgoing" ? "amount-out" : "amount-in")">
-                                        @(tx.Direction == "Outgoing" ? "-" : "+")@tx.Amount.ToString("N2")
-                                    </span>
-                                </td>
-                                <td>@tx.Status</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-
-                <div class="d-flex justify-content-between">
-                    @if (pageNumber > 1)
-                    {
-                        <a asp-action="Index" asp-route-pageNumber="@(pageNumber - 1)" class="btn btn-outline-secondary">
-                            Previous
-                        </a>
-                    }
-                    else
-                    {
-                        <span></span>
-                    }
-
-                    <a asp-action="Index" asp-route-pageNumber="@(pageNumber + 1)" class="btn btn-outline-secondary">
-                        Next
+                <div class="text-center py-5">
+                    <div class="qp-empty-icon mb-3">
+                        <svg width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022l-.074.997Zm2.004.45a7.003 7.003 0 0 0-.985-.299l.219-.976c.383.086.76.2 1.126.342l-.36.933Zm1.37.71a7.01 7.01 0 0 0-.439-.27l.493-.87a8.025 8.025 0 0 1 .979.654l-.615.789a6.996 6.996 0 0 0-.418-.302Zm1.834 1.79a6.99 6.99 0 0 0-.653-.796l.724-.69c.27.285.52.59.747.91l-.818.576ZM12 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" />
+                        </svg>
+                    </div>
+                    <h6 class="fw-semibold mb-2">No Transactions Yet</h6>
+                    <p class="text-muted mb-3">Your transaction history will appear here.</p>
+                    <a asp-controller="Transfer" asp-action="Index" class="btn btn-primary btn-sm">
+                        Make Your First Transfer
                     </a>
                 </div>
             }
-
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Direction</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var tx in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold">@tx.CreatedAt.ToString("MMM dd, yyyy")</div>
+                                        <small class="text-muted">@tx.CreatedAt.ToString("hh:mm tt")</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">@tx.Type</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge @(tx.Direction == "Outgoing" ? "bg-danger" : "bg-success")">
+                                            @if (tx.Direction == "Outgoing")
+                                            {
+                                                <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                                                    <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z" />
+                                                </svg>
+                                            }
+                                            else
+                                            {
+                                                <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                                                    <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z" />
+                                                </svg>
+                                            }
+                                            @tx.Direction
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="amount @(tx.Direction == "Outgoing" ? "amount-out" : "amount-in")">
+                                            @(tx.Direction == "Outgoing" ? "-" : "+")@tx.Amount.ToString("N2")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge @(tx.Status == "Completed" ? "bg-success" : tx.Status == "Pending" ? "bg-warning text-dark" : "bg-secondary")">
+                                            @tx.Status
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
         </div>
     </div>
+
+    <!-- Pagination -->
+    @if (Model.Any())
+    {
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <div>
+                @if (pageNumber > 1)
+                {
+                    <a asp-action="Index" asp-route-pageNumber="@(pageNumber - 1)" class="btn btn-outline-secondary">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                            <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z" />
+                        </svg>
+                        Previous
+                    </a>
+                }
+            </div>
+
+            <span class="text-muted">
+                Page @pageNumber
+            </span>
+
+            <div>
+                @if (Model.Count() >= pageSize)
+                {
+                    <a asp-action="Index" asp-route-pageNumber="@(pageNumber + 1)" class="btn btn-outline-secondary">
+                        Next
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="ms-2">
+                            <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z" />
+                        </svg>
+                    </a>
+                }
+            </div>
+        </div>
+    }
 </div>

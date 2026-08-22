@@ -34,7 +34,7 @@ namespace QuickPay.PL.Controllers
 
             ViewBag.PageNumber = effectivePageNumber;
 
-            return View(history);
+            return View(history.AsEnumerable());
         }
     }
 }

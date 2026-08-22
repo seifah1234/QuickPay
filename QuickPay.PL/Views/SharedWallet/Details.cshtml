@@ -9,136 +9,257 @@
     var isAdmin = Model.Members.Any(m => m.UserId == currentUserId && m.Role == "Admin");
 }
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h1 class="qp-dashboard-title mb-1">@Model.Name</h1>
+            <p class="text-muted mb-0">Shared wallet details and management.</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z" />
+            </svg>
+            Back
+        </a>
+    </div>
 
-            @if (TempData["SuccessMessage"] is not null)
-            {
-                <div class="alert alert-success">@TempData["SuccessMessage"]</div>
-            }
-            @if (TempData["ErrorMessage"] is not null)
-            {
-                <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
-            }
+    <!-- Alerts -->
+    @if (TempData["SuccessMessage"] is not null)
+    {
+        <div class="alert alert-success d-flex align-items-center mb-4" role="alert">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16" class="me-2 flex-shrink-0">
+                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z" />
+            </svg>
+            <span>@TempData["SuccessMessage"]</span>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] is not null)
+    {
+        <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16" class="me-2 flex-shrink-0">
+                <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
+            </svg>
+            <span>@TempData["ErrorMessage"]</span>
+        </div>
+    }
 
-            <div class="card shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h2 class="mb-1">@Model.Name</h2>
-                            <span class="badge @(Model.IsActive ? "bg-success" : "bg-secondary")">
-                                @(Model.IsActive ? "Active" : "Closed")
-                            </span>
-                        </div>
-                        <div class="fs-3">
-                            @Model.Balance.ToString("N2") <span class="text-muted fs-6">@Model.Currency</span>
-                        </div>
-                    </div>
-
-                    @if (isAdmin && Model.IsActive)
-                    {
-                        <hr />
-                        <form asp-action="Rename" method="post" class="d-inline">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="id" value="@Model.Id" />
-                            <input type="text" name="newName" value="@Model.Name" class="form-control d-inline w-auto" />
-                            <button type="submit" class="btn btn-secondary btn-sm">Rename</button>
-                        </form>
-
-                        <form asp-action="Close" method="post" class="d-inline"
-                              onsubmit="return confirm('Close this shared wallet? Balance must be zero.');">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="id" value="@Model.Id" />
-                            <button type="submit" class="btn btn-outline-danger btn-sm">Close Wallet</button>
-                        </form>
-                    }
-
-                    <p class="text-muted small mt-3 mb-0">
-                        To move money in or out, use <a asp-controller="Transfer" asp-action="Index">Transfer</a> -
-                        this shared wallet shows up as a destination/source there like any other account.
-                    </p>
+    <!-- Wallet Summary -->
+    <div class="card qp-wallet-summary mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <h2 class="mb-2">@Model.Name</h2>
+                    <span class="badge @(Model.IsActive ? "bg-success" : "bg-secondary")">
+                        @(Model.IsActive ? "Active" : "Closed")
+                    </span>
+                </div>
+                <div class="text-end">
+                    <div class="text-muted small mb-1">Balance</div>
+                    <div class="amount fs-3">@Model.Balance.ToString("N2") @Model.Currency</div>
                 </div>
             </div>
 
-            <div class="card shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <h5 class="mb-3">Members</h5>
+            @if (isAdmin && Model.IsActive)
+            {
+                <hr class="my-4" />
+                <div class="d-flex gap-2 flex-wrap">
+                    <form asp-action="Rename" method="post" class="flex-grow-1 d-flex gap-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="text" name="newName" value="@Model.Name" class="form-control" />
+                        <button type="submit" class="btn btn-secondary text-nowrap">
+                            <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                                <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z" />
+                            </svg>
+                            Rename
+                        </button>
+                    </form>
 
-                    <table class="table table-sm align-middle">
-                        <tbody>
-                            @foreach (var member in Model.Members)
+                    <form asp-action="Close" method="post"
+                          onsubmit="return confirm('Close this shared wallet? Balance must be zero.');">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <button type="submit" class="btn btn-outline-danger">
+                            <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
+                            </svg>
+                            Close Wallet
+                        </button>
+                    </form>
+                </div>
+            }
+
+            <div class="qp-info-box mt-3">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2 flex-shrink-0">
+                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                    <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z" />
+                </svg>
+                <span>To move money in or out, use <a asp-controller="Transfer" asp-action="Index">Transfer</a> - this shared wallet shows up as a destination/source there like any other account.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Members -->
+    <div class="card mb-4">
+        <div class="card-header bg-transparent border-bottom py-3">
+            <h5 class="mb-0">
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                    <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1h8Zm-7.978-1A.261.261 0 0 1 7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002a.274.274 0 0 1-.014.002H7.022ZM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM6.936 9.28a5.88 5.88 0 0 0-1.23-.247A7.35 7.35 0 0 0 5 9c-4 0-5 3-5 4 0 .667.333 1 1 1h4.216A2.238 2.238 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816ZM4.92 10A5.493 5.493 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275ZM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0Zm3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" />
+                </svg>
+                Members
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Role</th>
+                            <th>Joined</th>
+                            @if (isAdmin)
                             {
-                                <tr>
-                                    <td>@member.UserName</td>
-                                    <td><span class="badge bg-light text-dark">@member.Role</span></td>
-                                    <td class="text-muted small">joined @member.JoinedAt.ToString("MMM d, yyyy")</td>
+                                <th class="text-end">Actions</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var member in Model.Members)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="qp-participant-avatar">
+                                            @member.UserName.Substring(0, 1).ToUpper()
+                                        </div>
+                                        <span>@member.UserName</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge @(member.Role == "Admin" ? "bg-primary" : "bg-light text-dark")">
+                                        @member.Role
+                                    </span>
+                                </td>
+                                <td class="text-muted small">@member.JoinedAt.ToString("MMM d, yyyy")</td>
+                                @if (isAdmin)
+                                {
                                     <td class="text-end">
-                                        @if (isAdmin && member.UserId != currentUserId)
+                                        @if (member.UserId != currentUserId)
                                         {
-                                            <form asp-action="RemoveMember" method="post" class="d-inline"
+                                            <form asp-action="RemoveMember" method="post"
                                                   onsubmit="return confirm('Remove this member?');">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@Model.Id" />
                                                 <input type="hidden" name="memberUserId" value="@member.UserId" />
-                                                <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                                                        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+                                                        <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
+                                                    </svg>
+                                                    Remove
+                                                </button>
                                             </form>
                                         }
                                     </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @if (isAdmin && Model.IsActive)
+        {
+            <div class="card-footer bg-transparent border-top py-3">
+                <form asp-action="AddMember" method="post" class="d-flex gap-2 flex-wrap">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <div class="input-group flex-grow-1">
+                        <span class="input-group-text">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1h8Zm-7.978-1A.261.261 0 0 1 7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002a.274.274 0 0 1-.014.002H7.022ZM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM6.936 9.28a5.88 5.88 0 0 0-1.23-.247A7.35 7.35 0 0 0 5 9c-4 0-5 3-5 4 0 .667.333 1 1 1h4.216A2.238 2.238 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816ZM4.92 10A5.493 5.493 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275ZM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0Zm3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" />
+                            </svg>
+                        </span>
+                        <input type="text" name="identifier" class="form-control" placeholder="Username, phone, or email" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary text-nowrap">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                            <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+                        </svg>
+                        Add
+                    </button>
+                </form>
+            </div>
+        }
+    </div>
+
+    <!-- History -->
+    <div class="card">
+        <div class="card-header bg-transparent border-bottom py-3">
+            <h5 class="mb-0">
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                    <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022l-.074.997Zm2.004.45a7.003 7.003 0 0 0-.985-.299l.219-.976c.383.086.76.2 1.126.342l-.36.933Zm1.37.71a7.01 7.01 0 0 0-.439-.27l.493-.87a8.025 8.025 0 0 1 .979.654l-.615.789a6.996 6.996 0 0 0-.418-.302Zm1.834 1.79a6.99 6.99 0 0 0-.653-.796l.724-.69c.27.285.52.59.747.91l-.818.576ZM12 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" />
+                </svg>
+                History
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            @if (!history.Any())
+            {
+                <div class="text-center py-5">
+                    <div class="qp-empty-icon mb-3">
+                        <svg width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022l-.074.997Zm2.004.45a7.003 7.003 0 0 0-.985-.299l.219-.976c.383.086.76.2 1.126.342l-.36.933Zm1.37.71a7.01 7.01 0 0 0-.439-.27l.493-.87a8.025 8.025 0 0 1 .979.654l-.615.789a6.996 6.996 0 0 0-.418-.302Zm1.834 1.79a6.99 6.99 0 0 0-.653-.796l.724-.69c.27.285.52.59.747.91l-.818.576ZM12 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" />
+                        </svg>
+                    </div>
+                    <h6 class="fw-semibold mb-2">No Activity Yet</h6>
+                    <p class="text-muted mb-0">Transactions will appear here.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Direction</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var entry in history)
+                            {
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-light text-dark">@entry.Type</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge @(entry.Direction == "Outgoing" ? "bg-danger" : "bg-success")">
+                                            @entry.Direction
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="amount @(entry.Direction == "Outgoing" ? "amount-out" : "amount-in")">
+                                            @(entry.Direction == "Outgoing" ? "-" : "+")@entry.Amount.ToString("N2")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge @(entry.Status == "Completed" ? "bg-success" : "bg-warning text-dark")">
+                                            @entry.Status
+                                        </span>
+                                    </td>
+                                    <td class="text-muted small">@entry.CreatedAt.ToString("MMM d, yyyy HH:mm")</td>
                                 </tr>
                             }
                         </tbody>
                     </table>
-
-                    @if (isAdmin && Model.IsActive)
-                    {
-                        <form asp-action="AddMember" method="post" class="d-flex gap-2 mt-2">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="id" value="@Model.Id" />
-                            <input type="text" name="identifier" class="form-control" placeholder="Username, phone, or email" required />
-                            <button type="submit" class="btn btn-primary">Add Member</button>
-                        </form>
-                    }
                 </div>
-            </div>
-
-            <div class="card shadow-sm">
-                <div class="card-body p-4">
-                    <h5 class="mb-3">History</h5>
-
-                    @if (!history.Any())
-                    {
-                        <p class="text-muted mb-0">No activity yet.</p>
-                    }
-                    else
-                    {
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Type</th>
-                                    <th>Direction</th>
-                                    <th>Amount</th>
-                                    <th>Status</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var entry in history)
-                                {
-                                    <tr>
-                                        <td>@entry.Type</td>
-                                        <td>@entry.Direction</td>
-                                        <td>@entry.Amount.ToString("N2")</td>
-                                        <td>@entry.Status</td>
-                                        <td class="text-muted small">@entry.CreatedAt.ToString("MMM d, yyyy HH:mm")</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    }
-                </div>
-            </div>
-
+            }
         </div>
     </div>
 </div>
