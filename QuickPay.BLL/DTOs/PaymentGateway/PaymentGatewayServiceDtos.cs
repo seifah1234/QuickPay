@@ -8,11 +8,8 @@
 
         public decimal Amount { get; set; }
 
-        /// <summary>
-        /// Optional - when set, charges this linked BankAccount's saved
-        /// card directly instead of opening a new-card checkout page.
-        /// </summary>
-        public int? BankAccountId { get; set; }
+        /// <summary>The linked BankAccount to charge - deposits always use a saved card now, no new-card option.</summary>
+        public int BankAccountId { get; set; }
     }
 
     public class InitiateWithdrawRequestDto

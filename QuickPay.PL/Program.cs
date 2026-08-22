@@ -62,7 +62,6 @@ builder.Services.AddScoped<IWalletService, WalletService>();
 builder.Services.AddScoped<ILinkedAccountsService, LinkedAccountsService>();
 builder.Services.AddScoped<IPaymentGatewayProvider, PaymobGatewayProvider>();
 builder.Services.AddScoped<IPaymentGatewayService, PaymentGatewayService>();
-builder.Services.AddScoped<FakePaymentGatewayProvider>();
 
 
 

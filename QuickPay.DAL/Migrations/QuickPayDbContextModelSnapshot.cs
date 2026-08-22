@@ -264,6 +264,9 @@ namespace QuickPay.DAL.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<decimal>("RefundedAmount")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -356,7 +359,8 @@ namespace QuickPay.DAL.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<int>("UserId")
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("UserId");
 
                     b.HasKey("Id");
 
@@ -556,10 +560,10 @@ namespace QuickPay.DAL.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("UserId")
+                    b.Property<int?>("UserId1")
                         .HasColumnType("int");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId1");
 
                     b.HasDiscriminator().HasValue("SharedWallet");
                 });
@@ -569,15 +573,10 @@ namespace QuickPay.DAL.Migrations
                     b.HasBaseType("QuickPay.DAL.Entities.FinancialAccount");
 
                     b.Property<int>("UserId")
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("UserId");
 
                     b.HasIndex("UserId");
-
-                    b.ToTable("FinancialAccounts", t =>
-                        {
-                            t.Property("UserId")
-                                .HasColumnName("Wallet_UserId");
-                        });
 
                     b.HasDiscriminator().HasValue("Wallet");
                 });
@@ -748,7 +747,7 @@ namespace QuickPay.DAL.Migrations
                 {
                     b.HasOne("QuickPay.DAL.Entities.User", null)
                         .WithMany("OwnedSharedWallets")
-                        .HasForeignKey("UserId");
+                        .HasForeignKey("UserId1");
                 });
 
             modelBuilder.Entity("QuickPay.DAL.Entities.Wallet", b =>

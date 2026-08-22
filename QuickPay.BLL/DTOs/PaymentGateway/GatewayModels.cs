@@ -36,28 +36,6 @@
         public string? ErrorMessage { get; set; }
     }
 
-    public class GatewayPayoutRequest
-    {
-        public int UserId { get; set; }
-
-        public decimal Amount { get; set; }
-
-        public string Currency { get; set; } = "EGP";
-
-        public string MerchantReference { get; set; } = string.Empty;
-
-        public string DestinationToken { get; set; } = string.Empty;
-    }
-
-    public class GatewayPayoutResult
-    {
-        public bool IsSuccess { get; set; }
-
-        public string GatewayTransactionId { get; set; } = string.Empty;
-
-        public string? ErrorMessage { get; set; }
-    }
-
     // Paymob sends two structurally different callbacks: a TRANSACTION
     // callback for payment success/failure, and (only when card-saving is
     // enabled) a separate TOKEN callback carrying the reusable card token.

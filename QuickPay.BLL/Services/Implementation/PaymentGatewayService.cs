@@ -56,25 +56,17 @@ namespace QuickPay.BLL.Services.Implementation
                 return Fail("Account not found.");
             }
 
-            // Deposit-with-saved-card: verify the BankAccount is really
-            // this user's own before letting its token be charged - the
-            // same ownership check every other feature in this app makes
-            // before touching an account it didn't explicitly search for.
-            string? savedCardToken = null;
+            // Deposit-with-saved-card only now (see PATCH_NOTES) - verify
+            // the BankAccount is really this user's own before letting
+            // its token be charged, same as every other feature here.
+            var bankAccount = await _unitOfWork.BankAccounts.GetByIdAsync(
+                request.BankAccountId, cancellationToken);
 
-            if (request.BankAccountId.HasValue)
+            if (bankAccount is null ||
+                bankAccount.UserId != request.CurrentUserId ||
+                !bankAccount.IsActive)
             {
-                var bankAccount = await _unitOfWork.BankAccounts.GetByIdAsync(
-                    request.BankAccountId.Value, cancellationToken);
-
-                if (bankAccount is null ||
-                    bankAccount.UserId != request.CurrentUserId ||
-                    !bankAccount.IsActive)
-                {
-                    return Fail("Linked account was not found.");
-                }
-
-                savedCardToken = bankAccount.GatewayToken;
+                return Fail("Linked account was not found.");
             }
 
             var merchantReference = $"DEP-{request.WalletId}-{DateTime.UtcNow.Ticks}";
@@ -88,7 +80,7 @@ namespace QuickPay.BLL.Services.Implementation
                     PayerFullName = user.UserName,
                     PayerEmail = user.Email,
                     PayerPhoneNumber = user.PhoneNumber,
-                    SavedCardToken = savedCardToken
+                    SavedCardToken = bankAccount.GatewayToken
                 },
                 cancellationToken);
 
@@ -103,6 +95,7 @@ namespace QuickPay.BLL.Services.Implementation
             {
                 UserId = request.CurrentUserId,
                 WalletId = request.WalletId,
+                BankAccountId = bankAccount.Id,
                 Direction = PaymentGatewayDirection.Deposit,
                 GatewayTransactionId = merchantReference,
                 Amount = request.Amount,
@@ -159,52 +152,147 @@ namespace QuickPay.BLL.Services.Implementation
                 return Fail("Linked account was not found.");
             }
 
-            var alreadyPending = await _unitOfWork.PaymentGatewayTransactions
-                .GetPendingWithdrawAmountAsync(request.WalletId, cancellationToken);
-
-            if (wallet.Balance - alreadyPending < request.Amount)
+            if (wallet.Balance < request.Amount)
             {
-                return Fail("Insufficient available balance.");
+                return Fail("Insufficient wallet balance.");
             }
 
-            var merchantReference = $"WD-{request.WalletId}-{DateTime.UtcNow.Ticks}";
+            // There's no separate payout/disbursement product wired up
+            // (that needs its own Paymob credentials we don't have) -
+            // instead, Withdraw sends money back to the card by
+            // refunding whatever was previously deposited through that
+            // same card. That means the withdrawable amount is capped
+            // by "what's been deposited via this card and not already
+            // withdrawn" - not by the wallet balance alone.
+            var refundableDeposits = (await _unitOfWork.PaymentGatewayTransactions
+                .GetRefundableDepositsAsync(bankAccount.Id, cancellationToken))
+                .ToList();
 
-            var payoutResult = await _provider.InitiatePayoutAsync(
-                new GatewayPayoutRequest
-                {
-                    UserId = request.CurrentUserId,
-                    Amount = request.Amount,
-                    MerchantReference = merchantReference,
-                    DestinationToken = bankAccount.GatewayToken
-                },
-                cancellationToken);
+            var totalRefundable = refundableDeposits
+                .Sum(d => d.Amount - d.RefundedAmount);
 
-            if (!payoutResult.IsSuccess)
+            if (totalRefundable < request.Amount)
             {
                 return Fail(
-                    payoutResult.ErrorMessage ??
-                    "Could not start the withdrawal. Please try again.");
+                    $"You can only withdraw up to {totalRefundable:N2} EGP through this card - " +
+                    "that's the total you've deposited via it that hasn't already been withdrawn.");
             }
 
-            var pgt = new PaymentGatewayTransaction
-            {
-                UserId = request.CurrentUserId,
-                WalletId = request.WalletId,
-                BankAccountId = request.BankAccountId,
-                Direction = PaymentGatewayDirection.Withdraw,
-                GatewayTransactionId = merchantReference,
-                Amount = request.Amount,
-                Status = PaymentGatewayTransactionStatus.Pending
-            };
+            // Refunds are real, immediate, irreversible calls to Paymob -
+            // execute them one at a time (oldest deposit first) and stop
+            // the moment the requested amount is covered. If one call
+            // fails partway through, whatever succeeded before it stays
+            // succeeded (there's no "undo a refund" operation) - the
+            // loop just stops and reports exactly how much actually went
+            // through, rather than pretending an all-or-nothing rollback
+            // is possible for money that's already moved.
+            var remainingToWithdraw = request.Amount;
+            var actuallyRefunded = 0m;
+            var touchedDeposits = new List<(PaymentGatewayTransaction Deposit, decimal RefundedNow)>();
 
-            await _unitOfWork.PaymentGatewayTransactions.AddAsync(
-                pgt, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            foreach (var deposit in refundableDeposits)
+            {
+                if (remainingToWithdraw <= 0)
+                {
+                    break;
+                }
+
+                var availableOnThisDeposit = deposit.Amount - deposit.RefundedAmount;
+                var amountToRefundNow = Math.Min(availableOnThisDeposit, remainingToWithdraw);
+
+                var refundResult = await _provider.RefundAsync(
+                    new GatewayRefundRequest
+                    {
+                        GatewayTransactionId = deposit.ProviderTransactionId
+                            ?? deposit.GatewayTransactionId,
+                        Amount = amountToRefundNow
+                    },
+                    cancellationToken);
+
+                if (!refundResult.IsSuccess)
+                {
+                    break;
+                }
+
+                touchedDeposits.Add((deposit, amountToRefundNow));
+                actuallyRefunded += amountToRefundNow;
+                remainingToWithdraw -= amountToRefundNow;
+            }
+
+            if (actuallyRefunded <= 0)
+            {
+                return Fail("Could not process the withdrawal. Please try again.");
+            }
+
+            // Persist everything that actually happened, in one DB
+            // transaction, only after all the (irreversible) external
+            // refund calls above are done.
+            await _unitOfWork.BeginTransactionAsync(cancellationToken);
+
+            try
+            {
+                foreach (var (deposit, refundedNow) in touchedDeposits)
+                {
+                    deposit.RefundedAmount += refundedNow;
+                    deposit.UpdatedAt = DateTime.UtcNow;
+                }
+
+                wallet.Balance -= actuallyRefunded;
+                wallet.UpdatedAt = DateTime.UtcNow;
+
+                var merchantReference = $"WD-{request.WalletId}-{DateTime.UtcNow.Ticks}";
+
+                var withdrawPgt = new PaymentGatewayTransaction
+                {
+                    UserId = request.CurrentUserId,
+                    WalletId = request.WalletId,
+                    BankAccountId = bankAccount.Id,
+                    Direction = PaymentGatewayDirection.Withdraw,
+                    GatewayTransactionId = merchantReference,
+                    Amount = actuallyRefunded,
+                    Status = PaymentGatewayTransactionStatus.Succeeded,
+                    CompletedAt = DateTime.UtcNow
+                };
+
+                await _unitOfWork.PaymentGatewayTransactions.AddAsync(
+                    withdrawPgt, cancellationToken);
+
+                var ledgerTransaction = new Transaction
+                {
+                    FromAccountId = wallet.Id,
+                    ToAccountId = wallet.Id,
+                    Amount = actuallyRefunded,
+                    Type = TransactionType.Withdraw,
+                    Status = TransactionStatus.Completed,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _unitOfWork.Transactions.AddAsync(
+                    ledgerTransaction, cancellationToken);
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                await _unitOfWork.CommitTransactionAsync(cancellationToken);
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+                throw;
+            }
+
+            await _notificationService.NotifyAsync(
+                request.CurrentUserId,
+                type: "WithdrawCompleted",
+                message: $"Your withdrawal of {actuallyRefunded:N2} EGP to {bankAccount.DisplayName} was successful.",
+                cancellationToken);
+
+            var isPartial = actuallyRefunded < request.Amount;
 
             return new GatewayInitiationResultDto
             {
                 IsSuccess = true,
-                Message = "Withdrawal started. You'll be notified once it's complete."
+                Message = isPartial
+                    ? $"Only {actuallyRefunded:N2} EGP of the requested {request.Amount:N2} EGP could be withdrawn - the rest failed partway through and was not charged."
+                    : $"Withdrew {actuallyRefunded:N2} EGP to {bankAccount.DisplayName}."
             };
         }
 

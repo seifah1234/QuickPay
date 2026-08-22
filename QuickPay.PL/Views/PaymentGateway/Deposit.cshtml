@@ -23,51 +23,52 @@
                         var linkedAccounts = (IEnumerable<dynamic>)ViewBag.LinkedAccounts;
                     }
 
-                    <form asp-action="Deposit" asp-controller="PaymentGateway" method="post">
-                        @Html.AntiForgeryToken()
+                    @if (!linkedAccounts.Any())
+                    {
+                        <p class="text-muted">
+                            You need a linked card first.
+                            <a asp-controller="LinkedAccounts" asp-action="Index">Link one</a>.
+                        </p>
+                    }
+                    else
+                    {
+                        <form asp-action="Deposit" asp-controller="PaymentGateway" method="post">
+                            @Html.AntiForgeryToken()
 
-                        <div class="mb-3">
-                            <label class="form-label">Wallet</label>
-                            <select name="walletId" class="form-select">
-                                @foreach (var account in (IEnumerable<dynamic>)ViewBag.Accounts)
-                                {
-                                    <option value="@account.Id">@account.DisplayName - @account.Balance.ToString("N2") @account.Currency</option>
-                                }
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Pay with</label>
-                            <select name="bankAccountId" class="form-select">
-                                <option value="">A new card (redirects to checkout)</option>
-                                @foreach (var account in linkedAccounts)
-                                {
-                                    <option value="@account.Id">@account.DisplayName (@account.MaskedNumber)</option>
-                                }
-                            </select>
-                            @if (!linkedAccounts.Any())
-                            {
-                                <small class="text-muted">
-                                    No saved cards yet -
-                                    <a asp-controller="LinkedAccounts" asp-action="Index">link one</a>
-                                    for one-click deposits next time.
-                                </small>
-                            }
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label">Amount</label>
-                            <div class="input-group">
-                                <input type="number" name="amount" step="0.01" min="1" class="form-control" required />
-                                <span class="input-group-text">EGP</span>
+                            <div class="mb-3">
+                                <label class="form-label">Wallet</label>
+                                <select name="walletId" class="form-select">
+                                    @foreach (var account in (IEnumerable<dynamic>)ViewBag.Accounts)
+                                    {
+                                        <option value="@account.Id">@account.DisplayName - @account.Balance.ToString("N2") @account.Currency</option>
+                                    }
+                                </select>
                             </div>
-                        </div>
 
-                        <button type="submit" class="btn btn-primary w-100">
-                            Continue to Payment
-                        </button>
+                            <div class="mb-3">
+                                <label class="form-label">Pay with</label>
+                                <select name="bankAccountId" class="form-select">
+                                    @foreach (var account in linkedAccounts)
+                                    {
+                                        <option value="@account.Id">@account.DisplayName (@account.MaskedNumber)</option>
+                                    }
+                                </select>
+                            </div>
 
-                    </form>
+                            <div class="mb-4">
+                                <label class="form-label">Amount</label>
+                                <div class="input-group">
+                                    <input type="number" name="amount" step="0.01" min="1" class="form-control" required />
+                                    <span class="input-group-text">EGP</span>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">
+                                Deposit
+                            </button>
+
+                        </form>
+                    }
 
                 </div>
             </div>

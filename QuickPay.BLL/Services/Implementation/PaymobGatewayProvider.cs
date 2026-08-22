@@ -330,14 +330,6 @@ namespace QuickPay.BLL.Services.Implementation
             };
         }
 
-        public Task<GatewayPayoutResult> InitiatePayoutAsync(
-            GatewayPayoutRequest request,
-            CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException(
-                "Withdraw is currently disabled - see PATCH_NOTES.");
-        }
-
         public async Task<GatewayRefundResult> RefundAsync(
             GatewayRefundRequest request,
             CancellationToken cancellationToken = default)

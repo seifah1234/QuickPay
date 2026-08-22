@@ -52,16 +52,18 @@ namespace QuickPay.DAL.Repositries.Implementaion
                 .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         }
 
-        public async Task<decimal> GetPendingWithdrawAmountAsync(
-            int walletId,
+        public async Task<IEnumerable<PaymentGatewayTransaction>> GetRefundableDepositsAsync(
+            int bankAccountId,
             CancellationToken cancellationToken = default)
         {
             return await _context.PaymentGatewayTransactions
                 .Where(x =>
-                    x.WalletId == walletId &&
-                    x.Direction == Enums.PaymentGatewayDirection.Withdraw &&
-                    x.Status == Enums.PaymentGatewayTransactionStatus.Pending)
-                .SumAsync(x => x.Amount, cancellationToken);
+                    x.BankAccountId == bankAccountId &&
+                    x.Direction == Enums.PaymentGatewayDirection.Deposit &&
+                    x.Status == Enums.PaymentGatewayTransactionStatus.Succeeded &&
+                    x.Amount > x.RefundedAmount)
+                .OrderBy(x => x.CreatedAt)
+                .ToListAsync(cancellationToken);
         }
     }
 }

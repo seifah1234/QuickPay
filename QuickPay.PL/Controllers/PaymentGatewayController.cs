@@ -41,10 +41,16 @@ namespace QuickPay.PL.Controllers
         public async Task<IActionResult> Deposit(
             int walletId,
             decimal amount,
-            int? bankAccountId,
+            int bankAccountId,
             CancellationToken cancellationToken)
         {
             var userId = _currentUserService.GetCurrentUserId();
+
+            if (bankAccountId <= 0)
+            {
+                TempData["ErrorMessage"] = "Please select a card to deposit with.";
+                return RedirectToAction(nameof(Deposit));
+            }
 
             var result = await _gatewayService.InitiateDepositAsync(
                 new InitiateDepositRequestDto
@@ -113,50 +119,6 @@ namespace QuickPay.PL.Controllers
                 result.Message;
 
             return RedirectToAction(nameof(Withdraw));
-        }
-
-        [HttpGet]
-        [AllowAnonymous]
-        public IActionResult FakeCheckout(string id, decimal amount)
-        {
-            ViewBag.GatewayTransactionId = id;
-            ViewBag.Amount = amount;
-            return View();
-        }
-
-        [HttpPost]
-        [AllowAnonymous]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> FakeCheckoutSubmit(
-            string gatewayTransactionId,
-            decimal amount,
-            bool approve,
-            CancellationToken cancellationToken)
-        {
-            var payload = System.Text.Json.JsonSerializer.Serialize(new
-            {
-                GatewayTransactionId = gatewayTransactionId,
-                IsSuccessful = approve,
-                Amount = amount
-            });
-
-            var signature = FakePaymentGatewaySignature(payload);
-
-            using var content = new StringContent(
-                payload, System.Text.Encoding.UTF8, "application/json");
-
-            var isProcessed = await _gatewayService.HandleWebhookAsync(
-                payload,
-                new Dictionary<string, string>(),
-                signature,
-                cancellationToken);
-
-            TempData[isProcessed ? "SuccessMessage" : "ErrorMessage"] =
-                isProcessed
-                    ? "Payment processed."
-                    : "Could not process the payment.";
-
-            return RedirectToAction(nameof(Deposit));
         }
 
         [HttpPost]
@@ -247,10 +209,5 @@ namespace QuickPay.PL.Controllers
             return Ok();
         }
 
-        private static string FakePaymentGatewaySignature(string rawBody)
-        {
-            return QuickPay.BLL.Services.Implementation
-                .FakePaymentGatewayProvider.ComputeSignature(rawBody);
-        }
     }
 }

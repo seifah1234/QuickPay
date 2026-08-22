@@ -8,14 +8,9 @@ namespace QuickPay.BLL.Services.Interfaces
             GatewayChargeRequest request,
             CancellationToken cancellationToken = default);
 
-        Task<GatewayPayoutResult> InitiatePayoutAsync(
-            GatewayPayoutRequest request,
-            CancellationToken cancellationToken = default);
-
         Task<GatewayRefundResult> RefundAsync(
             GatewayRefundRequest request,
             CancellationToken cancellationToken = default);
-
 
         bool VerifyWebhookSignature(
             string rawBody,

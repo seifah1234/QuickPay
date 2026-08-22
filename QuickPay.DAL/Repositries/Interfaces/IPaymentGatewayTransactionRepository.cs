@@ -20,8 +20,13 @@ namespace QuickPay.DAL.Repositries.Interfaces
             int id,
             CancellationToken cancellationToken = default);
 
-        Task<decimal> GetPendingWithdrawAmountAsync(
-            int walletId,
+        /// <summary>
+        /// Successful deposits made through this BankAccount that still
+        /// have some un-refunded Amount left, oldest first - the pool
+        /// Withdraw draws from since there's no separate payout API.
+        /// </summary>
+        Task<IEnumerable<PaymentGatewayTransaction>> GetRefundableDepositsAsync(
+            int bankAccountId,
             CancellationToken cancellationToken = default);
     }
 }

@@ -30,6 +30,17 @@ namespace QuickPay.DAL.Entities
 
         public decimal Amount { get; set; }
 
+        /// <summary>
+        /// How much of this transaction's Amount has already been sent
+        /// back out via Refund. Only meaningful for Direction=Deposit
+        /// rows - Withdraw now works by refunding a previous deposit
+        /// back to the same card (see PaymentGatewayService.InitiateWithdrawAsync),
+        /// since there's no separate payout/disbursement product wired
+        /// up. A Deposit can be withdrawn from (refunded) up to its own
+        /// Amount, tracked here so it's never refunded more than once.
+        /// </summary>
+        public decimal RefundedAmount { get; set; }
+
         public PaymentGatewayTransactionStatus Status { get; set; }
 
         public DateTime? CompletedAt { get; set; }
