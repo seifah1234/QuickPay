@@ -15,6 +15,12 @@ namespace QuickPay.DAL.Entities
 
         public PaymentStatus Status { get; set; }
 
+        // Which of the initiator's own wallets collects the participants'
+        // shares as they pay in.
+        public int SettlementWalletId { get; set; }
+
+        public Wallet SettlementWallet { get; set; } = null!;
+
 
         public SplitGroup? SplitGroup { get; set; }
 

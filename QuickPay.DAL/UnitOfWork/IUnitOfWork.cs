@@ -19,6 +19,12 @@ namespace QuickPay.DAL.UnitOfWork
 
         IWalletRepository Wallets { get; }
 
+        IPaymentRepository Payments { get; }
+
+        ISplitGroupRepository SplitGroups { get; }
+
+        ISplitParticipantRepository SplitParticipants { get; }
+
         INotificationRepository Notifications { get; }
 
         Task<int> SaveChangesAsync(
