@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using QuickPay.DAL;
 
@@ -11,9 +12,11 @@ using QuickPay.DAL;
 namespace QuickPay.DAL.Migrations
 {
     [DbContext(typeof(QuickPayDbContext))]
-    partial class QuickPayDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260822094247_AddSmartSplitSettlementWallet")]
+    partial class AddSmartSplitSettlementWallet
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -492,6 +495,11 @@ namespace QuickPay.DAL.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasIndex("UserId");
+
                     b.HasDiscriminator().HasValue("SharedWallet");
                 });
 
@@ -503,6 +511,12 @@ namespace QuickPay.DAL.Migrations
                         .HasColumnType("int");
 
                     b.HasIndex("UserId");
+
+                    b.ToTable("FinancialAccounts", t =>
+                        {
+                            t.Property("UserId")
+                                .HasColumnName("Wallet_UserId");
+                        });
 
                     b.HasDiscriminator().HasValue("Wallet");
                 });
@@ -641,6 +655,13 @@ namespace QuickPay.DAL.Migrations
                     b.Navigation("ToAccount");
                 });
 
+            modelBuilder.Entity("QuickPay.DAL.Entities.SharedWallet", b =>
+                {
+                    b.HasOne("QuickPay.DAL.Entities.User", null)
+                        .WithMany("OwnedSharedWallets")
+                        .HasForeignKey("UserId");
+                });
+
             modelBuilder.Entity("QuickPay.DAL.Entities.Wallet", b =>
                 {
                     b.HasOne("QuickPay.DAL.Entities.User", "User")
@@ -679,6 +700,8 @@ namespace QuickPay.DAL.Migrations
             modelBuilder.Entity("QuickPay.DAL.Entities.User", b =>
                 {
                     b.Navigation("OtpCodes");
+
+                    b.Navigation("OwnedSharedWallets");
 
                     b.Navigation("RefreshTokens");
 

@@ -12,7 +12,11 @@ using QuickPay.DAL.Repositries.Interfaces;
 using QuickPay.DAL.UnitOfWork;
 using QuickPay.PL.Hubs;
 using QuickPay.PL.Services;
+using System.Globalization;
 using System.Text;
+
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
 var builder = WebApplication.CreateBuilder(args);
 
