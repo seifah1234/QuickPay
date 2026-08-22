@@ -31,6 +31,9 @@ namespace QuickPay.DAL.UnitOfWork
         public ISplitGroupRepository SplitGroups { get; }
 
         public ISplitParticipantRepository SplitParticipants { get; }
+        public ISharedWalletRepository SharedWallets { get; }
+
+        public ISharedWalletMemberRepository SharedWalletMembers { get; }
 
         public UnitOfWork(
             QuickPayDbContext context,
@@ -40,6 +43,8 @@ namespace QuickPay.DAL.UnitOfWork
             IPaymentRepository paymentRepository,
             ISplitGroupRepository splitGroupRepository,
             ISplitParticipantRepository splitParticipantRepository,
+            ISharedWalletRepository sharedWalletRepository,
+            ISharedWalletMemberRepository sharedWalletMemberRepository,
             IUserRepository userRepository,
             IRefreshTokenRepository refreshTokenRepository,
             IOtpCodeRepository otpCodeRepository,
@@ -53,6 +58,8 @@ namespace QuickPay.DAL.UnitOfWork
             Payments = paymentRepository;
             SplitGroups = splitGroupRepository;
             SplitParticipants = splitParticipantRepository;
+            SharedWallets = sharedWalletRepository;
+            SharedWalletMembers = sharedWalletMemberRepository;
 
             Users = userRepository;
             RefreshTokens = refreshTokenRepository;

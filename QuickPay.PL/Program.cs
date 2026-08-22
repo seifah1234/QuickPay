@@ -38,6 +38,8 @@ builder.Services.AddScoped<IWalletRepository, WalletRepository>();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<ISplitGroupRepository, SplitGroupRepository>();
 builder.Services.AddScoped<ISplitParticipantRepository, SplitParticipantRepository>();
+builder.Services.AddScoped<ISharedWalletRepository, SharedWalletRepository>();
+builder.Services.AddScoped<ISharedWalletMemberRepository, SharedWalletMemberRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddHttpContextAccessor();
 
@@ -62,6 +64,7 @@ builder.Services.AddScoped<ISplitStrategy, EqualSplitStrategy>();
 builder.Services.AddScoped<ISplitStrategy, CustomAmountSplitStrategy>();
 builder.Services.AddScoped<ISplitStrategy, PercentageSplitStrategy>();
 builder.Services.AddScoped<ISplitStrategyFactory, SplitStrategyFactory>();
+builder.Services.AddScoped<ISharedWalletService, SharedWalletService>();
 
 builder.Services.AddAutoMapper(m => m.AddProfile<AuthProfile>());
 builder.Services.AddAutoMapper(m => m.AddProfile<TransferProfile>());

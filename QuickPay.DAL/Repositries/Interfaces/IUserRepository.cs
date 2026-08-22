@@ -12,7 +12,6 @@ namespace QuickPay.DAL.Repositries.Interfaces
             string email,
             CancellationToken cancellationToken = default);
 
-        /// <summary>Used to resolve a person by username, phone, or email.</summary>
         Task<User?> GetByIdentifierAsync(
             string identifier,
             CancellationToken cancellationToken = default);
