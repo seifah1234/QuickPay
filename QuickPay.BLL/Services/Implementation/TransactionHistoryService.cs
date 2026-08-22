@@ -37,7 +37,7 @@ namespace QuickPay.BLL.Services.Implementation
                 Amount = t.Amount,
                 Status = t.Status.ToString(),
                 CreatedAt = t.CreatedAt,
-                Direction = myAccountIds.Contains(t.FromAccountId)
+                Direction = myAccountIds.Contains(t.FromAccountId) && t.Type != DAL.Enums.TransactionType.Deposit
                     ? "Outgoing"
                     : "Incoming"
             });
