@@ -1,0 +1,139 @@
+﻿@{
+    ViewData["Title"] = "Deposit";
+}
+
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h1 class="qp-dashboard-title mb-1">Deposit</h1>
+            <p class="text-muted mb-0">Add money to your wallet from a linked account.</p>
+        </div>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z" />
+            </svg>
+            Back
+        </a>
+    </div>
+
+    <!-- Alerts -->
+    @if (TempData["SuccessMessage"] is not null)
+    {
+        <div class="alert alert-success d-flex align-items-center mb-4" role="alert">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16" class="me-2 flex-shrink-0">
+                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z" />
+            </svg>
+            <span>@TempData["SuccessMessage"]</span>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] is not null)
+    {
+        <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+            <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16" class="me-2 flex-shrink-0">
+                <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
+            </svg>
+            <span>@TempData["ErrorMessage"]</span>
+        </div>
+    }
+
+    @{
+        var linkedAccounts = (IEnumerable<dynamic>)ViewBag.LinkedAccounts;
+    }
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            @if (!linkedAccounts.Any())
+            {
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <div class="qp-empty-icon mb-3">
+                            <svg width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V4Zm1 0v1h14V4H1Zm14 2H1v5h14V6ZM2 9.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Z" />
+                            </svg>
+                        </div>
+                        <h6 class="fw-semibold mb-2">No Linked Account</h6>
+                        <p class="text-muted mb-3">You need a linked card first to make a deposit.</p>
+                        <a asp-controller="LinkedAccounts" asp-action="Index" class="btn btn-primary btn-sm">
+                            Link Account
+                        </a>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card">
+                    <div class="card-header bg-transparent border-bottom py-3">
+                        <h5 class="mb-0">
+                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+                            </svg>
+                            Deposit Details
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <form asp-action="Deposit" asp-controller="PaymentGateway" method="post">
+                            @Html.AntiForgeryToken()
+
+                            <div class="mb-4">
+                                <label class="form-label">Deposit To Wallet</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                            <path d="M0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V4Zm1 0v1h14V4H1Zm14 2H1v5h14V6ZM2 9.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Z" />
+                                        </svg>
+                                    </span>
+                                    <select name="walletId" class="form-select">
+                                        @foreach (var account in (IEnumerable<dynamic>)ViewBag.Accounts)
+                                        {
+                                            <option value="@account.Id">@account.DisplayName - @account.Balance.ToString("N2") @account.Currency</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label">Pay With</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                            <path d="M0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V4Zm1 0v1h14V4H1Zm14 2H1v5h14V6ZM2 9.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Z" />
+                                        </svg>
+                                    </span>
+                                    <select name="bankAccountId" class="form-select">
+                                        @foreach (var account in linkedAccounts)
+                                        {
+                                            <option value="@account.Id">@account.DisplayName (@account.MaskedNumber)</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label">Amount</label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text">
+                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                            <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
+                                        </svg>
+                                    </span>
+                                    <input type="number" name="amount" step="0.01" min="1" class="form-control qp-amount-input" required />
+                                    <span class="input-group-text">EGP</span>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-success w-100 btn-lg">
+                                <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+                                </svg>
+                                Deposit Money
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
