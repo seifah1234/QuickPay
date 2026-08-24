@@ -73,5 +73,10 @@ namespace QuickPay.DAL.Repositries.Implementaion
         {
             await _context.Users.AddAsync(user, cancellationToken);
         }
+
+        public async Task<List<User>?> GetAllAsync(CancellationToken cancellationToken)
+        {
+            return await _context.Users.ToListAsync(cancellationToken);
+        }
     }
 }

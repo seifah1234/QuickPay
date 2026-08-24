@@ -126,5 +126,18 @@ namespace QuickPay.DAL.Repositries.Implementaion
                 .Take(pageSize)
                 .ToListAsync(cancellationToken);
         }
+
+        public async Task<List<Transaction>?> GetAllAsync(
+            int pageNumber = 1,
+            int pageSize = 100,
+            CancellationToken cancellationToken = default)
+        {
+            return await _context.Transactions
+                .Include(t => t.FromAccount)
+                .Include(t => t.ToAccount)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+        }
     }
 }

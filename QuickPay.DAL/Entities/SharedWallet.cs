@@ -10,5 +10,11 @@ namespace QuickPay.DAL.Entities
 
         public ICollection<SharedWalletMember> Members { get; set; }
             = new List<SharedWalletMember>();
+
+        public async Task<User> WalletOwner()
+        {
+            return await Task.FromResult(Members.FirstOrDefault(m => m.Role == Enums.SharedWalletRole.Admin)?.User
+                ?? throw new InvalidOperationException("Shared wallet must have an owner."));
+        } 
     }
 }

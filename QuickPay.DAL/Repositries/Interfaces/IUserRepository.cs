@@ -31,5 +31,7 @@ namespace QuickPay.DAL.Repositries.Interfaces
         Task AddAsync(
             User user,
             CancellationToken cancellationToken = default);
+
+        Task<List<User>?> GetAllAsync(CancellationToken cancellationToken);
     }
 }

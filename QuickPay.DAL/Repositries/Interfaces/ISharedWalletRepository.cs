@@ -19,5 +19,9 @@ namespace QuickPay.DAL.Repositries.Interfaces
         Task AddAsync(
             SharedWallet sharedWallet,
             CancellationToken cancellationToken = default);
+        Task<IEnumerable<SharedWallet>> GetAllAsync(
+            int pageNumber = 1,
+            int pageSize = 100,
+            CancellationToken cancellationToken = default);
     }
 }

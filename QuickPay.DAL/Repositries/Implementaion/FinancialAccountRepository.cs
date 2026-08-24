@@ -111,5 +111,10 @@ namespace QuickPay.DAL.Repositries.Implementaion
 
             return isSharedWalletOwnerOrMember;
         }
+
+        public Task<IEnumerable<FinancialAccount>> GetAllAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(_context.FinancialAccounts.AsEnumerable());
+        }
     }
 }

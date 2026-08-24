@@ -14,6 +14,7 @@
 
         public bool IsEmailVerified { get; set; }
         public bool IsAdmin { get; set; } = false;
+        public bool IsActive { get; set; } = true;
 
         public ICollection<RefreshToken> RefreshTokens { get; set; }
             = new List<RefreshToken>();

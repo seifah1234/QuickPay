@@ -1,0 +1,70 @@
+﻿@using QuickPay.BLL.DTOs.Admin
+@model IEnumerable<AdminUserDto>
+
+@{
+    ViewData["Title"] = "Manage Users";
+}
+
+<div class="container py-5">
+
+    <h2 class="mb-4">Users</h2>
+
+    @if (TempData["ErrorMessage"] is not null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Joined</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in Model)
+            {
+                <tr>
+                    <td>@user.UserName</td>
+                    <td>@user.Email</td>
+                    <td>@user.PhoneNumber</td>
+                    <td>
+                        <span class="badge @(user.Role == "Admin" ? "bg-primary" : "bg-secondary")">
+                            @user.Role
+                        </span>
+                    </td>
+                    <td>
+                        @if (user.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">Disabled</span>
+                        }
+                        @if (!user.IsPhoneVerified)
+                        {
+                            <span class="badge bg-warning text-dark">Unverified</span>
+                        }
+                    </td>
+                    <td>@user.CreatedAt.ToString("d MMM yyyy")</td>
+                    <td>
+                        <form asp-action="ToggleUserActive" asp-controller="Admin" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@user.Id" />
+                            <button type="submit" class="btn btn-sm @(user.IsActive ? "btn-outline-danger" : "btn-outline-success")">
+                                @(user.IsActive ? "Disable" : "Enable")
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+</div>

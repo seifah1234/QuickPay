@@ -56,5 +56,16 @@ namespace QuickPay.DAL.Repositries.Implementaion
             await _context.Set<SharedWallet>()
                 .AddAsync(sharedWallet, cancellationToken);
         }
+
+        public async Task<IEnumerable<SharedWallet>> GetAllAsync(int pageNumber = 1, int pageSize = 100, CancellationToken cancellationToken = default)
+        {
+            return await _context.Set<SharedWallet>()
+                .Include(w => w.Members)
+                .ThenInclude(m => m.User)
+                .AsNoTracking()
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+        }
     }
 }

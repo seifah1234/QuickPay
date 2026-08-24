@@ -1,5 +1,6 @@
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using QuickPay.DAL.Entities;
 using QuickPay.DAL.Repositries.Interfaces;
 
@@ -46,6 +47,19 @@ namespace QuickPay.DAL.Repositries.Implementaion
         public void Remove(Wallet wallet)
         {
             _context.Set<Wallet>().Remove(wallet);
+        }
+
+        public async Task<List<Wallet>?> GetAllAsync(
+            int pageNumber = 1,
+            int pageSize = 100,
+            CancellationToken cancellationToken = default)
+        {
+            return await _context.Set<Wallet>()
+                .Include(w => w.User)
+                .AsNoTracking()
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
         }
     }
 }
