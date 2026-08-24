@@ -28,5 +28,7 @@
 
         public ICollection<SharedWalletMember> SharedWalletMemberships { get; set; }
             = new List<SharedWalletMember>();
+        
+        public ICollection<ExternalLogin> ExternalLogins { get; set; } = new  List<ExternalLogin>();
     }
 }

@@ -61,5 +61,60 @@ namespace QuickPay.DAL.Repositries.Implementaion
         {
             await _context.Users.AddAsync(user, cancellationToken);
         }
+
+        public async Task<User?> GetByExternalLoginAsync(
+            string provider,
+            string providerKey,
+            CancellationToken cancellationToken = default)
+        {
+            return await _context.ExternalLogins
+                .Where(e => e.Provider == provider && e.ProviderUserId == providerKey)
+                .Select(e => e.User)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+ 
+        public async Task<bool> ExistsByExternalLoginAsync(
+            string provider,
+            string providerKey,
+            CancellationToken cancellationToken = default)
+        {
+            return await _context.ExternalLogins
+                .AnyAsync(e => e.Provider == provider && e.ProviderUserId == providerKey, cancellationToken);
+        }
+ 
+        public async Task CreateUserWithExternalLoginAsync(
+            User user,
+            string provider,
+            string providerKey,
+            CancellationToken cancellationToken = default)
+        {
+            user.ExternalLogins ??= new List<ExternalLogin>();
+            user.ExternalLogins.Add(BuildExternalLogin(provider, providerKey));
+ 
+            await _context.Users.AddAsync(user, cancellationToken);
+            // No SaveChangesAsync — left to the caller, consistent with AddAsync.
+        }
+ 
+        public async Task AddExternalLoginAsync(
+            int userId,
+            string provider,
+            string providerKey,
+            CancellationToken cancellationToken = default)
+        {
+            var login = BuildExternalLogin(provider, providerKey);
+            login.UserId = userId;
+ 
+            await _context.ExternalLogins.AddAsync(login, cancellationToken);
+            // No SaveChangesAsync — left to the caller, consistent with AddAsync.
+        }
+ 
+        private static ExternalLogin BuildExternalLogin(string provider, string providerKey)
+        {
+            return new ExternalLogin
+            {
+                Provider = provider,
+                ProviderUserId = providerKey
+            };
+        }
     }
 }
