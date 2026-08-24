@@ -43,11 +43,21 @@ namespace QuickPay.DAL.Repositries.Implementaion
                 .ToListAsync(cancellationToken);
         }
 
+     
+
+
+
+
+
+
+
         public async Task<IEnumerable<Transaction>> GetHistoryForUserAsync(
-            int userId,
-            int pageNumber,
-            int pageSize,
-            CancellationToken cancellationToken = default)
+    int userId,
+    int pageNumber,
+    int pageSize,
+    string? filterBy = null,
+    string? filterValue = null,
+    CancellationToken cancellationToken = default)
         {
             var ownedWalletIds = _context.Set<Wallet>()
                 .Where(w => w.UserId == userId)
@@ -59,10 +69,58 @@ namespace QuickPay.DAL.Repositries.Implementaion
 
             var accountIds = ownedWalletIds.Concat(ownedSharedWalletIds);
 
-            return await _context.Transactions
+            var query = _context.Transactions
                 .Where(t =>
                     accountIds.Contains(t.FromAccountId) ||
                     accountIds.Contains(t.ToAccountId))
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(filterBy) &&
+                !string.IsNullOrWhiteSpace(filterValue))
+            {
+                switch (filterBy)
+                {
+                    case "type":
+                        if (Enum.TryParse<Enums.TransactionType>(
+                                filterValue, true, out var typeValue))
+                        {
+                            query = query.Where(t => t.Type == typeValue);
+                        }
+                        break;
+
+                    case "status":
+                        if (Enum.TryParse<Enums.TransactionStatus>(
+                                filterValue, true, out var statusValue))
+                        {
+                            query = query.Where(t => t.Status == statusValue);
+                        }
+                        break;
+
+                    case "search":
+                        query = query.Where(t =>
+                            t.Type.ToString().Contains(filterValue) ||
+                            t.Status.ToString().Contains(filterValue));
+                        break;
+
+                    case "date":
+                        var dates = filterValue.Split('|');
+
+                        if (dates.Length == 2 &&
+                            DateTime.TryParse(dates[0], out var fromDate) &&
+                            DateTime.TryParse(dates[1], out var toDate))
+                        {
+                            fromDate = fromDate.Date;
+                            toDate = toDate.Date.AddDays(1);
+
+                            query = query.Where(t =>
+                                t.CreatedAt >= fromDate &&
+                                t.CreatedAt < toDate);
+                        }
+                        break;
+                }
+            }
+
+            return await query
                 .OrderByDescending(t => t.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)

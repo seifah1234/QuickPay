@@ -15,6 +15,7 @@ namespace QuickPay.DAL.UnitOfWork
 
         ITransactionRepository Transactions { get; }
 
+
         IFinancialAccountRepository FinancialAccounts { get; }
 
         IWalletRepository Wallets { get; }
@@ -35,6 +36,8 @@ namespace QuickPay.DAL.UnitOfWork
         IBankAccountRepository BankAccounts { get; }
 
         IPaymentGatewayTransactionRepository PaymentGatewayTransactions { get; }
+
+        IAuditLogRepository AuditLogs { get; }
 
         Task<int> SaveChangesAsync(
             CancellationToken cancellationToken = default);

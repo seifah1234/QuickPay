@@ -1,0 +1,69 @@
+﻿@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="container py-4">
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h1 class="qp-dashboard-title mb-1">Admin Dashboard</h1>
+        </div>
+        <span class="badge bg-dark px-3 py-2">Admin Only</span>
+    </div>
+
+
+
+    <div class="row g-4">
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">User Management</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-2">List, verify, and manage platform users.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Wallets & Gateway Transactions</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-2">Monitor wallets and payment gateway activity.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Transactions & Shared Wallets</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-2">Monitor transfers and shared wallet activity.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100 border-primary">
+                <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Audit Log</h5>
+                    <span class="badge bg-primary">Live</span>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <p class="text-muted small mb-3">Track every admin action across the system.</p>
+                    <a asp-controller="AuditLog" asp-action="Index" class="btn btn-primary btn-sm mt-auto">
+                        Open Audit Log
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+

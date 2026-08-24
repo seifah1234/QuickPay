@@ -13,6 +13,7 @@
         public bool IsPhoneVerified { get; set; }
 
         public bool IsEmailVerified { get; set; }
+        public bool IsAdmin { get; set; } = false;
 
         public ICollection<RefreshToken> RefreshTokens { get; set; }
             = new List<RefreshToken>();

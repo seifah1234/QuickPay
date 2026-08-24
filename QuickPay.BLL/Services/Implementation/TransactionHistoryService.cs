@@ -13,11 +13,18 @@ namespace QuickPay.BLL.Services.Implementation
             _unitOfWork = unitOfWork;
         }
 
+       
+
+
+
+
         public async Task<IEnumerable<TransactionHistoryDto>> GetUserHistoryAsync(
-            int userId,
-            int pageNumber,
-            int pageSize,
-            CancellationToken cancellationToken = default)
+    int userId,
+    int pageNumber,
+    int pageSize,
+    string? filterBy = null,
+    string? filterValue = null,
+    CancellationToken cancellationToken = default)
         {
             var myAccounts = await _unitOfWork.FinancialAccounts
                 .GetMyAccountsAsync(userId, cancellationToken);
@@ -28,7 +35,9 @@ namespace QuickPay.BLL.Services.Implementation
 
             var transactions = await _unitOfWork.Transactions
                 .GetHistoryForUserAsync(
-                    userId, pageNumber, pageSize, cancellationToken);
+                    userId, pageNumber, pageSize,
+                    filterBy, filterValue,
+                    cancellationToken);
 
             return transactions.Select(t => new TransactionHistoryDto
             {

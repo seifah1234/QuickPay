@@ -100,6 +100,12 @@ namespace QuickPay.BLL.Services.Implementation
                 sharedWallet, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+            await _notificationService.NotifyAsync(
+    request.CurrentUserId,
+    type: "SharedWalletCreated",
+    message: $"You created a new shared wallet \"{sharedWallet.Name}\".",
+    cancellationToken);
+
             return await GetDetailsAsync(
                 sharedWallet.Id, request.CurrentUserId, cancellationToken);
         }
@@ -129,6 +135,22 @@ namespace QuickPay.BLL.Services.Implementation
             sharedWallet.UpdatedAt = DateTime.UtcNow;
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+
+            var walletWithMembers = await _unitOfWork.SharedWallets
+    .GetWithMembersAsync(sharedWallet.Id, cancellationToken);
+
+            if (walletWithMembers is not null)
+            {
+                foreach (var member in walletWithMembers.Members)
+                {
+                    await _notificationService.NotifyAsync(
+                        member.UserId,
+                        type: "SharedWalletRenamed",
+                        message: $"Shared wallet was renamed to \"{sharedWallet.Name}\".",
+                        cancellationToken);
+                }
+            }
 
             return await GetDetailsAsync(
                 sharedWallet.Id, request.CurrentUserId, cancellationToken);
@@ -166,6 +188,13 @@ namespace QuickPay.BLL.Services.Implementation
                     "That person is already a member of this shared wallet.");
             }
 
+            var walletBeforeAdd = await _unitOfWork.SharedWallets
+    .GetWithMembersAsync(request.SharedWalletId, cancellationToken);
+
+            var existingMemberIds = walletBeforeAdd?.Members
+                .Select(m => m.UserId)
+                .ToList() ?? new List<int>();
+
             await _unitOfWork.SharedWalletMembers.AddAsync(
                 new SharedWalletMember
                 {
@@ -183,6 +212,17 @@ namespace QuickPay.BLL.Services.Implementation
                 type: "SharedWalletMemberAdded",
                 message: "You were added to a shared wallet.",
                 cancellationToken);
+
+            var walletName = walletBeforeAdd?.Name ?? "a shared wallet";
+
+            foreach (var existingMemberId in existingMemberIds)
+            {
+                await _notificationService.NotifyAsync(
+                    existingMemberId,
+                    type: "SharedWalletMemberJoined",
+                    message: $"{userToAdd.UserName} joined shared wallet \"{walletName}\".",
+                    cancellationToken);
+            }
 
             return await GetDetailsAsync(
                 request.SharedWalletId, request.CurrentUserId, cancellationToken);
@@ -219,6 +259,17 @@ namespace QuickPay.BLL.Services.Implementation
                 }
             }
 
+            var walletBeforeRemove = await _unitOfWork.SharedWallets
+    .GetWithMembersAsync(request.SharedWalletId, cancellationToken);
+
+            var removedUser = await _unitOfWork.Users.GetByIdAsync(
+                request.MemberUserId, cancellationToken);
+
+            var remainingMemberIds = walletBeforeRemove?.Members
+                .Where(m => m.UserId != request.MemberUserId)
+                .Select(m => m.UserId)
+                .ToList() ?? new List<int>();
+
             _unitOfWork.SharedWalletMembers.Remove(membershipToRemove);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -227,6 +278,18 @@ namespace QuickPay.BLL.Services.Implementation
                 type: "SharedWalletMemberRemoved",
                 message: "You were removed from a shared wallet.",
                 cancellationToken);
+
+            var walletName = walletBeforeRemove?.Name ?? "a shared wallet";
+            var removedUserName = removedUser?.UserName ?? "A member";
+
+            foreach (var remainingMemberId in remainingMemberIds)
+            {
+                await _notificationService.NotifyAsync(
+                    remainingMemberId,
+                    type: "SharedWalletMemberLeft",
+                    message: $"{removedUserName} left shared wallet \"{walletName}\".",
+                    cancellationToken);
+            }
         }
 
         public async Task CloseAsync(
@@ -256,6 +319,21 @@ namespace QuickPay.BLL.Services.Implementation
             sharedWallet.UpdatedAt = DateTime.UtcNow;
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            var walletWithMembers = await _unitOfWork.SharedWallets
+                .GetWithMembersAsync(sharedWallet.Id, cancellationToken);
+
+            if (walletWithMembers is not null)
+            {
+                foreach (var member in walletWithMembers.Members)
+                {
+                    await _notificationService.NotifyAsync(
+                        member.UserId,
+                        type: "SharedWalletClosed",
+                        message: $"Shared wallet \"{sharedWallet.Name}\" has been closed.",
+                        cancellationToken);
+                }
+            }
         }
 
         private async Task<SharedWalletEntity> GetMemberWalletOrThrow(

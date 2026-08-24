@@ -26,7 +26,7 @@ namespace QuickPay.PL.Controllers
 
             var accounts = await _accountService.GetMyAccountsAsync(userId, cancellationToken);
             var recentTransactions = await _transactionService.GetUserHistoryAsync(
-                userId, pageNumber: 1, pageSize: 5, cancellationToken);
+     userId, pageNumber: 1, pageSize: 5, cancellationToken: cancellationToken);
 
             var dashboardViewModel = new DashboardViewModel
             {
