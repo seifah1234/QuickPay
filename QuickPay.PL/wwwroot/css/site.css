@@ -177,6 +177,77 @@ a {
     filter: invert(1);
 }
 
+/* -------------------- navbar dropdowns -------------------- */
+
+.navbar .dropdown-menu {
+    border: none;
+    border-radius: var(--qp-radius-sm);
+    box-shadow: var(--qp-shadow-lg);
+    padding: .4rem;
+    margin-top: .4rem;
+    min-width: 12rem;
+}
+
+.navbar .dropdown-item {
+    border-radius: 8px;
+    padding: .5rem .75rem;
+    font-weight: 500;
+    font-size: .92rem;
+    color: var(--qp-ink-soft);
+    transition: background 0.15s ease;
+}
+
+    .navbar .dropdown-item:hover,
+    .navbar .dropdown-item:focus {
+        background: var(--qp-brand-tint);
+        color: var(--qp-brand-darker);
+    }
+
+.navbar .dropdown-header {
+    font-size: .8rem;
+    color: var(--qp-muted);
+    padding: .25rem .75rem;
+}
+
+.navbar .dropdown-toggle::after {
+    opacity: .6;
+    vertical-align: .1em;
+}
+
+/* the Log Out action is a <button> inside a <form> so it actually
+   posts to /Auth/Logout, styled to look identical to the <a> items
+   around it */
+.qp-logout-btn {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background: none;
+    border: none;
+    text-align: left;
+    color: var(--qp-danger);
+}
+
+    .qp-logout-btn:hover {
+        background: var(--qp-danger-tint) !important;
+        color: var(--qp-danger) !important;
+    }
+
+/* user avatar in the top-right dropdown */
+.qp-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: var(--qp-brand-darker);
+    font-family: var(--qp-font-display);
+    font-weight: 700;
+    font-size: .85rem;
+    flex-shrink: 0;
+}
+
 /* -------------------- buttons -------------------- */
 
 .btn {

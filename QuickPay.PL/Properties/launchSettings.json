@@ -9,9 +9,6 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
-      },
-      "dotnetRunMessages": true,
-      "applicationUrl": "http://localhost:5103"
     },
     "https": {
       "commandName": "Project",
@@ -31,7 +28,6 @@
       }
     }
   },
-  "$schema": "https://json.schemastore.org/launchsettings.json",
   "iisSettings": {
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
