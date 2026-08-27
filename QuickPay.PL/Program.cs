@@ -87,6 +87,18 @@ builder.Services
                 return Task.CompletedTask;
             }
         };
+    })
+    .AddCookie("ExternalCookie", options =>
+    {
+        options.Cookie.Name = "ExternalAuthTempToken";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(5);
+    })
+    .AddGoogle(options =>
+    {
+        options.SignInScheme = "ExternalCookie";
+        IConfigurationSection googleAuthNSection = builder.Configuration.GetSection("Authentication:Google");
+        options.ClientId = googleAuthNSection["ClientId"];
+        options.ClientSecret = googleAuthNSection["ClientSecret"];
     });
 
 var app = builder.Build();

@@ -1,4 +1,7 @@
-﻿using AutoMapper;
+﻿using System.Security.Claims;
+using AutoMapper;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc;
 using QuickPay.BLL.DTOs.Auth;
 using QuickPay.BLL.Services.Interfaces;
@@ -170,6 +173,60 @@ namespace QuickPay.PL.Controllers
 
             return RedirectToAction(nameof(Login));
         }
+
+        [HttpGet]
+        public IActionResult GoogleLogin(string? returnUrl = null)
+        {
+            var redirectUrl = Url.Action(nameof(GoogleCallback), "Auth", new { returnUrl });
+            var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
+            return Challenge(properties, GoogleDefaults.AuthenticationScheme);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GoogleCallback(
+            string? returnUrl = null,
+            CancellationToken cancellationToken = default)
+        {
+            // Authenticate against temporary external cookie scheme
+            var authenticateResult = await HttpContext.AuthenticateAsync("ExternalCookie");
+            if (!authenticateResult.Succeeded || authenticateResult.Principal is null)
+            {
+                TempData["ErrorMessage"] = "External authentication failed.";
+                return RedirectToAction(nameof(Login));
+            }
+            var principal = authenticateResult.Principal;
+            var providerKey = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+            var email = principal.FindFirstValue(ClaimTypes.Email);
+            var fullName = principal.FindFirstValue(ClaimTypes.Name);
+            if (string.IsNullOrEmpty(providerKey) || string.IsNullOrEmpty(email))
+            {
+                TempData["ErrorMessage"] = "Error reading information from Google.";
+                return RedirectToAction(nameof(Login));
+            }
+            var request = new ExternalLoginRequestDto
+            {
+                Provider = GoogleDefaults.AuthenticationScheme,
+                ProviderKey = providerKey,
+                Email = email,
+                Name = fullName
+            };
+            var result = await _authService.ExternalLoginAsync(request, cancellationToken);
+            // Clean up temporary external cookie
+            await HttpContext.SignOutAsync("ExternalCookie");
+            if (!result.IsSuccess)
+            {
+                TempData["ErrorMessage"] = result.Message;
+                return RedirectToAction(nameof(Login));
+            }
+            // Set custom access_token and refresh_token cookies
+            SetAuthCookies(result);
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+            return RedirectToAction("Index", "Home");
+        }
+
 
         private void SetAuthCookies(AuthResultDto result)
         {

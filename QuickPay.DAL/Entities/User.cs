@@ -6,9 +6,11 @@
 
         public string Email { get; set; } = null!;
 
-        public string PhoneNumber { get; set; } = null!;
+        public string PhoneNumber { get; set; } = string.Empty;
 
-        public string PasswordHash { get; set; } = null!;
+        public string PasswordHash { get; set; } = string.Empty;
+
+        public bool IsExternalUser { get; set; } = false;
 
         public bool IsPhoneVerified { get; set; }
 

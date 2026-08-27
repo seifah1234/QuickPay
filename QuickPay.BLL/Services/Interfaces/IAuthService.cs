@@ -23,5 +23,8 @@ namespace QuickPay.BLL.Services.Interfaces
         Task LogoutAsync(
             string refreshToken,
             CancellationToken cancellationToken = default);
+        
+        Task<AuthResultDto> ExternalLoginAsync(ExternalLoginRequestDto? request,
+            CancellationToken cancellationToken = default);
     }
 }

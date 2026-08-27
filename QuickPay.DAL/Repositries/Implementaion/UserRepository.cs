@@ -86,13 +86,15 @@ namespace QuickPay.DAL.Repositries.Implementaion
             User user,
             string provider,
             string providerKey,
+            string userName,
             CancellationToken cancellationToken = default)
         {
             user.ExternalLogins ??= new List<ExternalLogin>();
             user.ExternalLogins.Add(BuildExternalLogin(provider, providerKey));
+            user.IsExternalUser = true;
+            user.UserName = userName;
  
             await _context.Users.AddAsync(user, cancellationToken);
-            // No SaveChangesAsync — left to the caller, consistent with AddAsync.
         }
  
         public async Task AddExternalLoginAsync(
@@ -105,7 +107,6 @@ namespace QuickPay.DAL.Repositries.Implementaion
             login.UserId = userId;
  
             await _context.ExternalLogins.AddAsync(login, cancellationToken);
-            // No SaveChangesAsync — left to the caller, consistent with AddAsync.
         }
  
         private static ExternalLogin BuildExternalLogin(string provider, string providerKey)

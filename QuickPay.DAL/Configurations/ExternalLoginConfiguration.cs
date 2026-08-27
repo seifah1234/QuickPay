@@ -22,15 +22,6 @@ namespace QuickPay.DAL.Configurations
             builder.HasIndex(e => new { e.UserId, e.ProviderUserId })
                 .IsUnique();
 
-            builder.Property(x => x.Token)
-                .IsRequired();
-
-            builder.Property(x => x.TokenTtl)
-                .IsRequired();
-
-            builder.Property(x => x.LastUpdatedAt)
-                .IsRequired();
-
             // Many ExternalLogins -> One User
             builder.HasOne(x => x.User)
                 .WithMany(x => x.ExternalLogins)
