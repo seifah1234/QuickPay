@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using AutoMapper;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
@@ -17,11 +17,16 @@ namespace QuickPay.PL.Controllers
 
         private readonly IAuthService _authService;
         private readonly IMapper _mapper;
+        private readonly ICurrentUserService _currentUserService;
 
-        public AuthController(IAuthService authService, IMapper mapper)
+        public AuthController(
+            IAuthService authService,
+            IMapper mapper,
+            ICurrentUserService currentUserService)
         {
             _authService = authService;
             _mapper = mapper;
+            _currentUserService = currentUserService;
         }
 
         [HttpGet]
@@ -94,6 +99,46 @@ namespace QuickPay.PL.Controllers
                 "Phone verified. You're logged in.";
 
             return RedirectToAction("Index", "Home");
+        }
+
+        [HttpGet]
+        public IActionResult AddPhoneNumber()
+        {
+            return View(new AddPhoneNumberViewModel());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddPhoneNumber(
+            AddPhoneNumberViewModel model,
+            CancellationToken cancellationToken)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var userId = _currentUserService.GetCurrentUserId();
+            if (userId <= 0)
+            {
+                TempData["ErrorMessage"] = "You must be logged in to add a phone number.";
+                return RedirectToAction(nameof(Login));
+            }
+
+            var result = await _authService.AddPhoneNumberAsync(
+                userId, model.PhoneNumber, cancellationToken);
+
+            if (!result.IsSuccess)
+            {
+                ModelState.AddModelError(string.Empty, result.Message);
+                return View(model);
+            }
+
+            TempData["InfoMessage"] = result.Message;
+
+            return RedirectToAction(
+                nameof(VerifyOtp),
+                new { userId = userId });
         }
 
         [HttpGet]

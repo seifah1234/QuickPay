@@ -1,4 +1,4 @@
-﻿@using QuickPay.BLL.ViewModels.Auth
+@using QuickPay.BLL.ViewModels.Auth
 @model LoginViewModel
 
 @{
@@ -15,6 +15,28 @@
                     <p class="text-muted mb-4">
                         Log in to your QuickPay account.
                     </p>
+
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+                            @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                    @if (TempData["InfoMessage"] != null)
+                    {
+                        <div class="alert alert-info alert-dismissible fade show mb-3" role="alert">
+                            @TempData["InfoMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
 
                     <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
@@ -47,29 +69,6 @@
                         Don't have an account?
                         <a asp-action="Register" asp-controller="Auth">Sign up</a>
                     </p>
-                    @if (TempData["ErrorMessage"] != null)
-                    {
-                        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
-                            @TempData["ErrorMessage"]
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    }
-                    @if (TempData["SuccessMessage"] != null)
-                    {
-                        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
-                            @TempData["SuccessMessage"]
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    }
-                    @if (TempData["InfoMessage"] != null)
-                    {
-                        <div class="alert alert-info alert-dismissible fade show mb-3" role="alert">
-                            @TempData["InfoMessage"]
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    }
-                    <!-- Model validation errors (e.g. Invalid email or password) -->
-                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
 
                 </div>

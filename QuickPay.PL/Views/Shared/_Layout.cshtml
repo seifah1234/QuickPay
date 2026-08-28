@@ -1,4 +1,25 @@
-﻿<!DOCTYPE html>
+@using QuickPay.DAL.UnitOfWork
+@using System.Security.Claims
+@using System.IdentityModel.Tokens.Jwt
+@inject IUnitOfWork UnitOfWork
+@{
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    bool needsPhone = false;
+    if (isAuthenticated)
+    {
+        var subClaim = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value 
+                    ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (int.TryParse(subClaim, out var currentUserId))
+        {
+            var userEntity = await UnitOfWork.Users.GetByIdAsync(currentUserId);
+            if (userEntity != null && (string.IsNullOrWhiteSpace(userEntity.PhoneNumber) || !userEntity.IsPhoneVerified))
+            {
+                needsPhone = true;
+            }
+        }
+    }
+}
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -45,6 +66,21 @@
             </div>
         </nav>
     </header>
+
+    @if (needsPhone)
+    {
+        <div class="container mb-3">
+            <div class="alert alert-warning d-flex align-items-center justify-content-between shadow-sm mb-0" role="alert">
+                <div>
+                    <strong>Action Required:</strong> Your account does not have a verified phone number. Please add your phone number to secure your account.
+                </div>
+                <a asp-controller="Auth" asp-action="AddPhoneNumber" class="btn btn-warning btn-sm ms-3 text-nowrap">
+                    Add Phone Number
+                </a>
+            </div>
+        </div>
+    }
+
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()

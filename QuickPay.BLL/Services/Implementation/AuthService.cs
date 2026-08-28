@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Options;
 using QuickPay.BLL.DTOs.Auth;
 using QuickPay.BLL.Services.Interfaces;
 using QuickPay.BLL.Settings;
@@ -304,6 +304,39 @@ namespace QuickPay.BLL.Services.Implementation
                 var cleaned = new string(source.Where(char.IsLetterOrDigit).ToArray());
                 return string.IsNullOrEmpty(cleaned) ? "user" : cleaned.ToLowerInvariant();
             }
+
+        public async Task<AuthResultDto> AddPhoneNumberAsync(
+            int userId,
+            string phoneNumber,
+            CancellationToken cancellationToken = default)
+        {
+            var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
+            if (user is null)
+            {
+                return FailedAuthResult("User account not found.");
+            }
+
+            if (await _unitOfWork.Users.ExistsByPhoneNumberAsync(phoneNumber, cancellationToken))
+            {
+                return FailedAuthResult("An account with this phone number already exists.");
+            }
+
+            user.PhoneNumber = phoneNumber;
+            user.IsPhoneVerified = false;
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            await _otpService.GenerateAndSendAsync(
+                user.Id,
+                user.PhoneNumber,
+                OtpPurpose.PhoneVerification,
+                cancellationToken);
+
+            return new AuthResultDto
+            {
+                IsSuccess = true,
+                Message = "Phone number updated. We sent a verification code to your phone."
+            };
         }
     }
+}
 
