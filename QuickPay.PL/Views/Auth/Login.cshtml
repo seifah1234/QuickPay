@@ -39,13 +39,37 @@
 
                     </form>
 
-                    <p class="text-center mt-3 mb-0">
-                        <a asp-action="GoogleLogin" asp-controller="Auth" class="btn btn-outline-secondary btn-lg px-4">Continue with Google</a>
-                    </p>
+                    <form asp-action="GoogleLogin" asp-controller="Auth" method="get" class="text-center mt-3 mb-0">
+                        <button type="submit" class="btn btn-primary w-100">Continue with Google</button>
+                    </form>
+                    
                     <p class="text-center mt-3 mb-0">
                         Don't have an account?
                         <a asp-action="Register" asp-controller="Auth">Sign up</a>
                     </p>
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+                            @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                    @if (TempData["InfoMessage"] != null)
+                    {
+                        <div class="alert alert-info alert-dismissible fade show mb-3" role="alert">
+                            @TempData["InfoMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                    <!-- Model validation errors (e.g. Invalid email or password) -->
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
 
                 </div>
