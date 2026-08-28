@@ -4,70 +4,474 @@
 @{
     ViewData["Title"] = "Transaction History";
     var pageNumber = (int)(ViewBag.PageNumber ?? 1);
+    var pageSize = (int)(ViewBag.PageSize ?? 10);
 }
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h1 class="qp-dashboard-title mb-1">Transaction History</h1>
+            <p class="text-muted mb-0">All wallet activity, filtered and searched your way.</p>
+        </div>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z" />
+            </svg>
+            Back to Dashboard
+        </a>
+    </div>
 
-            <h2 class="mb-4">Transaction History</h2>
+    <!-- Filters Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-transparent border-bottom py-3">
+            <h5 class="mb-0 d-flex align-items-center">
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                    <path d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5v-2z" />
+                </svg>
+                Filters
+            </h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3 align-items-end">
+                <!-- Filter By Dropdown -->
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Filter By</label>
+                    <select id="filterBy" class="form-select">
+                        <option value="">All Transactions</option>
+                        <option value="type">Type</option>
+                        <option value="status">Status</option>
+                        <option value="search">Search</option>
+                        <option value="date">Date Range</option>
+                    </select>
+                </div>
 
-            @if (!Model.Any())
+                <!-- Dynamic Filter Container -->
+                <div class="col-md-6">
+                    <div id="filterContainer">
+                        <!-- Type Filter -->
+                        <div id="typeFilter" class="filter-option d-none">
+                            <label class="form-label fw-semibold">Transaction Type</label>
+                            <select id="type" class="form-select">
+                                <option value="">All Types</option>
+                                <option value="Deposit">Deposit</option>
+                                <option value="Withdraw">Withdraw</option>
+                                <option value="Transfer">Transfer</option>
+                                <option value="Payment">Payment</option>
+                                <option value="SplitPayment">Split Payment</option>
+                            </select>
+                        </div>
+
+                        <!-- Status Filter -->
+                        <div id="statusFilter" class="filter-option d-none">
+                            <label class="form-label fw-semibold">Status</label>
+                            <select id="status" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Failed">Failed</option>
+                                <option value="Cancelled">Cancelled</option>
+                            </select>
+                        </div>
+
+                        <!-- Search Filter -->
+                        <div id="searchFilter" class="filter-option d-none">
+                            <label class="form-label fw-semibold">Search</label>
+                            <input type="text" id="search" class="form-control" placeholder="Type to search..." />
+                        </div>
+
+                        <!-- Date Range Filter -->
+                        <div id="dateFilter" class="filter-option d-none">
+                            <label class="form-label fw-semibold">Date Range</label>
+                            <div class="d-flex gap-2">
+                                <input type="date" id="fromDate" class="form-control" />
+                                <span class="align-self-center">to</span>
+                                <input type="date" id="toDate" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clear Filter Button -->
+                <div class="col-md-3">
+                    <button type="button" id="clearFilter" class="btn btn-outline-secondary w-100">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                            <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z" />
+                            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z" />
+                        </svg>
+                        Clear Filter
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transactions Table Card -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 d-flex align-items-center">
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                    <path d="M0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V4Zm1 0v1h14V4H1Zm14 2H1v5h14V6ZM2 9.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Z" />
+                </svg>
+                Transactions
+            </h5>
+            <span class="badge bg-primary rounded-pill">@Model.Count() Transactions</span>
+        </div>
+        <div class="card-body p-0">
+            @if (Model == null || !Model.Any())
             {
-                <p class="text-muted">No transactions yet.</p>
+                <div class="text-center py-5">
+                    <div class="qp-empty-icon mb-3">
+                        <svg width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V4Zm1 0v1h14V4H1Zm14 2H1v5h14V6ZM2 9.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Z" />
+                        </svg>
+                    </div>
+                    <p class="text-muted mb-0 fw-semibold">No transactions yet</p>
+                    <p class="text-muted small">Activity for this user will show up here once it happens.</p>
+                </div>
             }
             else
             {
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Type</th>
-                            <th>Direction</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var tx in Model)
-                        {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
                             <tr>
-                                <td>@tx.CreatedAt.ToString("g")</td>
-                                <td>@tx.Type</td>
-                                <td>
-                                    <span class="badge @(tx.Direction == "Outgoing" ? "bg-danger" : "bg-success")">
-                                        @tx.Direction
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="amount @(tx.Direction == "Outgoing" ? "amount-out" : "amount-in")">
-                                        @(tx.Direction == "Outgoing" ? "-" : "+")@tx.Amount.ToString("N2")
-                                    </span>
-                                </td>
-                                <td>@tx.Status</td>
+                                <th class="ps-4">Transaction</th>
+                                <th class="text-end">Amount</th>
+                                <th>Status</th>
+                                <th class="pe-4">Date</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach (var t in Model)
+                            {
+                                var typeLower = t.Type.ToLower();
+                                var isDeposit = typeLower == "deposit";
 
-                <div class="d-flex justify-content-between">
-                    @if (pageNumber > 1)
-                    {
-                        <a asp-action="Index" asp-route-pageNumber="@(pageNumber - 1)" class="btn btn-outline-secondary">
-                            Previous
-                        </a>
-                    }
-                    else
-                    {
-                        <span></span>
-                    }
+                                var badgeClass = t.Status.ToLower() switch
+                                {
+                                    "completed" => "bg-success",
+                                    "pending" => "bg-warning text-dark",
+                                    "failed" => "bg-danger",
+                                    "cancelled" => "bg-secondary",
+                                    _ => "bg-secondary"
+                                };
 
-                    <a asp-action="Index" asp-route-pageNumber="@(pageNumber + 1)" class="btn btn-outline-secondary">
-                        Next
-                    </a>
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <span class="qp-badge">
+                                                @if (isDeposit)
+                                                {
+                                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                                        <path fill-rule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5z" transform="rotate(180 8 8)" />
+                                                    </svg>
+                                                }
+                                                else if (typeLower == "withdraw")
+                                                {
+                                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                                        <path fill-rule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z" />
+                                                    </svg>
+                                                }
+                                                else if (typeLower == "transfer")
+                                                {
+                                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                                        <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z" />
+                                                    </svg>
+                                                }
+                                                else if (typeLower == "payment")
+                                                {
+                                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                                        <path d="M0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V4Zm1 0v1h14V4H1Zm14 2H1v5h14V6ZM2 9.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Z" />
+                                                    </svg>
+                                                }
+                                                else
+                                                {
+                                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                                        <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />
+                                                    </svg>
+                                                }
+                                            </span>
+                                            <div>
+                                                <div class="fw-semibold">@t.Type</div>
+                                                <small class="text-muted">@t.Direction</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="amount @(isDeposit ? "amount-in" : "amount-out") fw-semibold">
+                                            @(isDeposit ? "+" : "−")@t.Amount.ToString("N2")
+                                        </span>
+                                    </td>
+                                    <td><span class="badge @badgeClass">@t.Status</span></td>
+                                    <td class="text-muted small text-nowrap pe-4">@t.CreatedAt.ToString("MMM d, yyyy · h:mm tt")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
                 </div>
             }
-
         </div>
     </div>
+
+    <!-- Pagination -->
+    @if (Model.Any())
+    {
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <div>
+                @if (pageNumber > 1)
+                {
+                    <a asp-action="Index" asp-route-pageNumber="@(pageNumber - 1)" class="btn btn-outline-secondary">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                            <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z" />
+                        </svg>
+                        Previous
+                    </a>
+                }
+            </div>
+            <span class="text-muted">Page @pageNumber</span>
+        </div>
+    }
 </div>
+
+<style>
+    .qp-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: #f0f0f0;
+        color: #495057;
+    }
+
+    .amount-in {
+        color: #198754;
+    }
+
+    .amount-out {
+        color: #dc3545;
+    }
+
+    .qp-empty-icon {
+        color: #dee2e6;
+    }
+
+    .filter-option {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-5px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+<script>
+    const filterBy = document.getElementById("filterBy");
+    const typeFilter = document.getElementById("typeFilter");
+    const statusFilter = document.getElementById("statusFilter");
+    const searchFilter = document.getElementById("searchFilter");
+    const dateFilter = document.getElementById("dateFilter");
+    const type = document.getElementById("type");
+    const status = document.getElementById("status");
+    const search = document.getElementById("search");
+    const fromDate = document.getElementById("fromDate");
+    const toDate = document.getElementById("toDate");
+    const clearFilter = document.getElementById("clearFilter");
+
+    // Debounce function for search input
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    filterBy.addEventListener("change", function() {
+        typeFilter.classList.add("d-none");
+        statusFilter.classList.add("d-none");
+        searchFilter.classList.add("d-none");
+        dateFilter.classList.add("d-none");
+
+        switch (this.value) {
+            case "type":
+                typeFilter.classList.remove("d-none");
+                break;
+            case "status":
+                statusFilter.classList.remove("d-none");
+                break;
+            case "search":
+                searchFilter.classList.remove("d-none");
+                search.focus();
+                break;
+            case "date":
+                dateFilter.classList.remove("d-none");
+                break;
+            default:
+                loadTransactions("", "");
+        }
+    });
+
+    type.addEventListener("change", function() {
+        loadTransactions("type", this.value);
+    });
+
+    status.addEventListener("change", function() {
+        loadTransactions("status", this.value);
+    });
+
+    search.addEventListener("input", debounce(function() {
+        loadTransactions("search", this.value);
+    }, 500));
+
+    fromDate.addEventListener("change", loadDateFilter);
+    toDate.addEventListener("change", loadDateFilter);
+
+    function loadDateFilter() {
+        if (fromDate.value && toDate.value) {
+            loadTransactions("date", fromDate.value + "|" + toDate.value);
+        }
+    }
+
+    clearFilter.addEventListener("click", function() {
+        filterBy.value = "";
+        type.value = "";
+        status.value = "";
+        search.value = "";
+        fromDate.value = "";
+        toDate.value = "";
+
+        typeFilter.classList.add("d-none");
+        statusFilter.classList.add("d-none");
+        searchFilter.classList.add("d-none");
+        dateFilter.classList.add("d-none");
+
+        loadTransactions("", "");
+    });
+
+    function loadTransactions(filterByValue, filterValue) {
+        const url = `/TransactionHistory/Filter?filterBy=${encodeURIComponent(filterByValue)}&filterValue=${encodeURIComponent(filterValue)}`;
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Failed to load transactions.");
+                }
+                return response.json();
+            })
+            .then(data => updateTable(data))
+            .catch(error => console.error(error));
+    }
+
+    function updateTable(transactions) {
+        const tableBody = document.querySelector("table tbody");
+        if (!tableBody) return;
+
+        tableBody.innerHTML = "";
+
+        if (transactions.length === 0) {
+            tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-5">
+                            <svg width="48" height="48" fill="currentColor" viewBox="0 0 16 16" class="mb-3">
+                                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />
+                            </svg>
+                            <p class="mb-1 fw-semibold">No transactions found</p>
+                            <p class="small">Try adjusting your filters</p>
+                        </td>
+                    </tr>
+                `;
+            return;
+        }
+
+        transactions.forEach(t => {
+            const typeLower = t.type.toLowerCase();
+            const isDeposit = typeLower === "deposit";
+
+            let iconPath;
+            if (isDeposit) {
+                iconPath = '<path fill-rule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5z" transform="rotate(180 8 8)" />';
+            } else if (typeLower === "withdraw") {
+                iconPath = '<path fill-rule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z" />';
+            } else if (typeLower === "transfer") {
+                iconPath = '<path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z" />';
+            } else if (typeLower === "payment") {
+                iconPath = '<path d="M0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V4Zm1 0v1h14V4H1Zm14 2H1v5h14V6ZM2 9.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Z" />';
+            } else {
+                iconPath = '<path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />';
+            }
+
+            let badgeClass;
+            switch (t.status.toLowerCase()) {
+                case "completed":
+                    badgeClass = "bg-success";
+                    break;
+                case "pending":
+                    badgeClass = "bg-warning text-dark";
+                    break;
+                case "failed":
+                    badgeClass = "bg-danger";
+                    break;
+                case "cancelled":
+                    badgeClass = "bg-secondary";
+                    break;
+                default:
+                    badgeClass = "bg-secondary";
+            }
+
+            const amount = Number(t.amount).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+
+            const sign = isDeposit ? "+" : "−";
+            const amountClass = isDeposit ? "amount-in" : "amount-out";
+
+            const date = new Date(t.createdAt).toLocaleString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+                hour: "numeric",
+                minute: "2-digit"
+            });
+
+            tableBody.innerHTML += `
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="qp-badge">
+                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                        ${iconPath}
+                                    </svg>
+                                </span>
+                                <div>
+                                    <div class="fw-semibold">${t.type}</div>
+                                    <small class="text-muted">${t.direction || ''}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-end">
+                            <span class="amount ${amountClass} fw-semibold">
+                                ${sign}${amount}
+                            </span>
+                        </td>
+                        <td><span class="badge ${badgeClass}">${t.status}</span></td>
+                        <td class="text-muted small text-nowrap pe-4">${date}</td>
+                    </tr>
+                `;
+        });
+    }
+</script>

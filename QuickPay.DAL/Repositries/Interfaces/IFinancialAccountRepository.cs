@@ -26,5 +26,6 @@ namespace QuickPay.DAL.Repositries.Interfaces
             int accountId,
             int userId,
             CancellationToken cancellationToken = default);
+        Task<IEnumerable<FinancialAccount>> GetAllAsync(CancellationToken cancellationToken);
     }
 }

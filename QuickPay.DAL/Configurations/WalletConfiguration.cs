@@ -12,8 +12,9 @@ namespace QuickPay.DAL.Configurations
     {
         public void Configure(EntityTypeBuilder<Wallet> builder)
         {
-            builder.Property(x => x.UserId)
-                .IsRequired();
+            builder.Property(w => w.UserId)
+            .HasColumnName("UserId")
+            .IsRequired();
 
             builder.HasOne(x => x.User)
                 .WithMany(x => x.Wallets)

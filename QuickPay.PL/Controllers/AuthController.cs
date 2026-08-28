@@ -98,7 +98,7 @@ namespace QuickPay.PL.Controllers
             TempData["SuccessMessage"] =
                 "Phone verified. You're logged in.";
 
-            return RedirectToAction("Index", "Home");
+            return RedirectToPostLoginDestination(result);
         }
 
         [HttpGet]
@@ -171,7 +171,7 @@ namespace QuickPay.PL.Controllers
 
             SetAuthCookies(result);
 
-            return RedirectToAction("Index", "Home");
+            return RedirectToPostLoginDestination(result);
         }
 
         [HttpPost]
@@ -272,6 +272,13 @@ namespace QuickPay.PL.Controllers
             return RedirectToAction("Index", "Home");
         }
 
+
+        private IActionResult RedirectToPostLoginDestination(AuthResultDto result)
+        {
+            return result.IsAdmin
+                ? RedirectToAction("Index", "Admin")
+                : RedirectToAction("Index", "Home");
+        }
 
         private void SetAuthCookies(AuthResultDto result)
         {

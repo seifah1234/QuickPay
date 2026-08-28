@@ -1,0 +1,294 @@
+diff --git a/QuickPay.BLL/DTOs/Auth/AuthResultDto.cs b/QuickPay.BLL/DTOs/Auth/AuthResultDto.cs
+index 9761918..4eff476 100644
+--- a/QuickPay.BLL/DTOs/Auth/AuthResultDto.cs
++++ b/QuickPay.BLL/DTOs/Auth/AuthResultDto.cs
+@@ -15,5 +15,12 @@ namespace QuickPay.BLL.DTOs.Auth
+         public string RefreshToken { get; set; } = string.Empty;
+ 
+         public DateTime RefreshTokenExpiresAt { get; set; }
++
++        /// <summary>
++        /// Set from the authenticated user's IsAdmin flag - lets
++        /// AuthController redirect straight to the Admin dashboard on
++        /// login without an extra DB round trip.
++        /// </summary>
++        public bool IsAdmin { get; set; }
+     }
+ }
+\ No newline at end of file
+diff --git a/QuickPay.BLL/Services/Implementation/AuthService.cs b/QuickPay.BLL/Services/Implementation/AuthService.cs
+index 367034c..e697476 100644
+--- a/QuickPay.BLL/Services/Implementation/AuthService.cs
++++ b/QuickPay.BLL/Services/Implementation/AuthService.cs
+@@ -205,7 +205,8 @@ namespace QuickPay.BLL.Services.Implementation
+                 AccessToken = accessToken,
+                 AccessTokenExpiresAt = accessTokenExpiresAt,
+                 RefreshToken = refreshTokenValue,
+-                RefreshTokenExpiresAt = refreshTokenExpiresAt
++                RefreshTokenExpiresAt = refreshTokenExpiresAt,
++                IsAdmin = user.IsAdmin
+             };
+         }
+ 
+diff --git a/QuickPay.PL/Controllers/AuthController.cs b/QuickPay.PL/Controllers/AuthController.cs
+index 90ad936..8b7d0bb 100644
+--- a/QuickPay.PL/Controllers/AuthController.cs
++++ b/QuickPay.PL/Controllers/AuthController.cs
+@@ -90,7 +90,7 @@ namespace QuickPay.PL.Controllers
+             TempData["SuccessMessage"] =
+                 "Phone verified. You're logged in.";
+ 
+-            return RedirectToAction("Index", "Home");
++            return RedirectToPostLoginDestination(result);
+         }
+ 
+         [HttpGet]
+@@ -123,7 +123,7 @@ namespace QuickPay.PL.Controllers
+ 
+             SetAuthCookies(result);
+ 
+-            return RedirectToAction("Index", "Home");
++            return RedirectToPostLoginDestination(result);
+         }
+ 
+         [HttpPost]
+@@ -171,6 +171,13 @@ namespace QuickPay.PL.Controllers
+             return RedirectToAction(nameof(Login));
+         }
+ 
++        private IActionResult RedirectToPostLoginDestination(AuthResultDto result)
++        {
++            return result.IsAdmin
++                ? RedirectToAction("Index", "Admin")
++                : RedirectToAction("Index", "Home");
++        }
++
+         private void SetAuthCookies(AuthResultDto result)
+         {
+             Response.Cookies.Append(
+diff --git a/QuickPay.PL/Views/Shared/_Layout.cshtml b/QuickPay.PL/Views/Shared/_Layout.cshtml
+index 3b1074a..6f88878 100644
+--- a/QuickPay.PL/Views/Shared/_Layout.cshtml
++++ b/QuickPay.PL/Views/Shared/_Layout.cshtml
+@@ -2,11 +2,14 @@
+ @inject QuickPay.BLL.Services.Interfaces.ICurrentUserService CurrentUserService
+ @{
+     bool isAdmin = false;
++    string? currentUserName = null;
++
+     if (User.Identity?.IsAuthenticated == true)
+     {
+         var currentUserId = CurrentUserService.GetCurrentUserId();
+         var currentUser = await UnitOfWork.Users.GetByIdAsync(currentUserId);
+         isAdmin = currentUser?.IsAdmin ?? false;
++        currentUserName = currentUser?.UserName;
+     }
+ }
+ 
+@@ -39,54 +42,31 @@
+                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+ 
+                     <ul class="navbar-nav flex-grow-1">
+-                        <li class="nav-item">
+-                            <a class="nav-link" asp-area="" asp-controller="Wallet" asp-action="Index">
++                        <li class="nav-item dropdown">
++                            <a class="nav-link dropdown-toggle" href="#" id="walletsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                                     <path d="M0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V4Zm1 0v1h14V4H1Zm14 2H1v5h14V6ZM2 9.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Z" />
+                                 </svg>
+                                 Wallets
+                             </a>
++                            <ul class="dropdown-menu" aria-labelledby="walletsDropdown">
++                                <li><a class="dropdown-item" asp-area="" asp-controller="Wallet" asp-action="Index">My Wallets</a></li>
++                                <li><a class="dropdown-item" asp-area="" asp-controller="SharedWallet" asp-action="Index">Shared Wallets</a></li>
++                                <li><a class="dropdown-item" asp-area="" asp-controller="LinkedAccounts" asp-action="Index">Linked Accounts</a></li>
++                            </ul>
+                         </li>
+-                        <li class="nav-item">
+-                            <a class="nav-link" asp-area="" asp-controller="LinkedAccounts" asp-action="Index">
+-                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+-                                    <path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9c-.086 0-.17.01-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z" />
+-                                    <path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4.02 4.02 0 0 1-.82 1H12a3 3 0 1 0 0-6H9z" />
+-                                </svg>
+-                                Linked Accounts
+-                            </a>
+-                        </li>
+-                        <li class="nav-item">
+-                            <a class="nav-link" asp-area="" asp-controller="SharedWallet" asp-action="Index">
+-                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+-                                    <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1h8Zm-7.978-1A.261.261 0 0 1 7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002a.274.274 0 0 1-.014.002H7.022ZM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM6.936 9.28a5.88 5.88 0 0 0-1.23-.247A7.35 7.35 0 0 0 5 9c-4 0-5 3-5 4 0 .667.333 1 1 1h4.216A2.238 2.238 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816ZM4.92 10A5.493 5.493 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275ZM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0Zm3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" />
+-                                </svg>
+-                                Shared Wallets
+-                            </a>
+-                        </li>
+-                        <li class="nav-item">
+-                            <a class="nav-link" asp-area="" asp-controller="Transfer" asp-action="Index">
++                        <li class="nav-item dropdown">
++                            <a class="nav-link dropdown-toggle" href="#" id="paymentsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                                     <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z" />
+                                 </svg>
+-                                Transfer
+-                            </a>
+-                        </li>
+-                        <li class="nav-item">
+-                            <a class="nav-link" asp-area="" asp-controller="SmartSplit" asp-action="Index">
+-                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+-                                    <path d="M7 1.5a.5.5 0 0 1 .5.5v1.04a4 4 0 0 1 3 3.92h1.04a.5.5 0 0 1 0 1H10.5a4 4 0 0 1-3 3.92v1.04a.5.5 0 0 1-1 0v-1.04a4 4 0 0 1-3-3.92H2.5a.5.5 0 0 1 0-1h1.04a4 4 0 0 1 3-3.92V2a.5.5 0 0 1 .5-.5Zm0 2.06A3 3 0 0 0 4.06 6.5h5.88A3 3 0 0 0 7 3.56Zm0 8.88a3 3 0 0 0 2.94-2.44H4.06A3 3 0 0 0 7 12.44Z" />
+-                                </svg>
+-                                Smart Split
+-                            </a>
+-                        </li>
+-                        <li class="nav-item">
+-                            <a class="nav-link" asp-area="" asp-controller="TransactionHistory" asp-action="Index">
+-                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+-                                    <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022l-.074.997Zm2.004.45a7.003 7.003 0 0 0-.985-.299l.219-.976c.383.086.76.2 1.126.342l-.36.933Zm1.37.71a7.01 7.01 0 0 0-.439-.27l.493-.87a8.025 8.025 0 0 1 .979.654l-.615.789a6.996 6.996 0 0 0-.418-.302Zm1.834 1.79a6.99 6.99 0 0 0-.653-.796l.724-.69c.27.285.52.59.747.91l-.818.576ZM12 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" />
+-                                </svg>
+-                                History
++                                Payments
+                             </a>
++                            <ul class="dropdown-menu" aria-labelledby="paymentsDropdown">
++                                <li><a class="dropdown-item" asp-area="" asp-controller="Transfer" asp-action="Index">Transfer</a></li>
++                                <li><a class="dropdown-item" asp-area="" asp-controller="SmartSplit" asp-action="Index">Smart Split</a></li>
++                                <li><a class="dropdown-item" asp-area="" asp-controller="TransactionHistory" asp-action="Index">Transaction History</a></li>
++                            </ul>
+                         </li>
+                         <li class="nav-item">
+                             <a class="nav-link" asp-area="" asp-controller="Notifications" asp-action="Index">
+@@ -99,27 +79,41 @@
+                         </li>
+                         @if (isAdmin)
+                         {
+-                            <li>
+-                            <a asp-controller="Admin" asp-action="Index" class="nav-link">
+-                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+-                                    <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zM8 4a1 1 0 0 1 1 1v3.586l2.707 2.707a1 1 0 0 1-1.414 1.414L7 9.414V5a1 1 0 0 1 1-1z" />
+-                                </svg>
+-                                Admin Dashboard
++                            <li class="nav-item">
++                                <a class="nav-link" asp-controller="Admin" asp-action="Index">
++                                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
++                                        <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zM8 4a1 1 0 0 1 1 1v3.586l2.707 2.707a1 1 0 0 1-1.414 1.414L7 9.414V5a1 1 0 0 1 1-1z" />
++                                    </svg>
++                                    Admin Dashboard
+                                 </a>
+                             </li>
+                         }
+                     </ul>
+                     <ul class="navbar-nav">
+-                        <li class="nav-item">
+-                            <a class="nav-link btn-outline-danger ms-2" asp-area="" asp-controller="Auth" asp-action="Login">
+-                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+-                                    <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z" />
+-                                    <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z" />
+-                                </svg>
+-                                Log Out
++                        <li class="nav-item dropdown">
++                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userMenuDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
++                                <span class="qp-avatar me-2">@((currentUserName ?? "?").Substring(0, 1).ToUpper())</span>
++                                @(currentUserName ?? "Account")
+                             </a>
++                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenuDropdown">
++                                <li><h6 class="dropdown-header">Signed in as @currentUserName</h6></li>
++                                <li><hr class="dropdown-divider" /></li>
++                                <li>
++                                    <form asp-action="Logout" asp-controller="Auth" method="post">
++                                        @Html.AntiForgeryToken()
++                                        <button type="submit" class="dropdown-item qp-logout-btn">
++                                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
++                                                <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z" />
++                                                <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z" />
++                                            </svg>
++                                            Log Out
++                                        </button>
++                                    </form>
++                                </li>
++                            </ul>
+                         </li>
+                     </ul>
++
+                 </div>
+             </div>
+         </nav>
+diff --git a/QuickPay.PL/wwwroot/css/site.css b/QuickPay.PL/wwwroot/css/site.css
+index 699f36e..6967595 100644
+--- a/QuickPay.PL/wwwroot/css/site.css
++++ b/QuickPay.PL/wwwroot/css/site.css
+@@ -177,6 +177,77 @@ a {
+     filter: invert(1);
+ }
+ 
++/* -------------------- navbar dropdowns -------------------- */
++
++.navbar .dropdown-menu {
++    border: none;
++    border-radius: var(--qp-radius-sm);
++    box-shadow: var(--qp-shadow-lg);
++    padding: .4rem;
++    margin-top: .4rem;
++    min-width: 12rem;
++}
++
++.navbar .dropdown-item {
++    border-radius: 8px;
++    padding: .5rem .75rem;
++    font-weight: 500;
++    font-size: .92rem;
++    color: var(--qp-ink-soft);
++    transition: background 0.15s ease;
++}
++
++    .navbar .dropdown-item:hover,
++    .navbar .dropdown-item:focus {
++        background: var(--qp-brand-tint);
++        color: var(--qp-brand-darker);
++    }
++
++.navbar .dropdown-header {
++    font-size: .8rem;
++    color: var(--qp-muted);
++    padding: .25rem .75rem;
++}
++
++.navbar .dropdown-toggle::after {
++    opacity: .6;
++    vertical-align: .1em;
++}
++
++/* the Log Out action is a <button> inside a <form> so it actually
++   posts to /Auth/Logout, styled to look identical to the <a> items
++   around it */
++.qp-logout-btn {
++    display: flex;
++    align-items: center;
++    width: 100%;
++    background: none;
++    border: none;
++    text-align: left;
++    color: var(--qp-danger);
++}
++
++    .qp-logout-btn:hover {
++        background: var(--qp-danger-tint) !important;
++        color: var(--qp-danger) !important;
++    }
++
++/* user avatar in the top-right dropdown */
++.qp-avatar {
++    display: inline-flex;
++    align-items: center;
++    justify-content: center;
++    width: 28px;
++    height: 28px;
++    border-radius: 50%;
++    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
++    color: var(--qp-brand-darker);
++    font-family: var(--qp-font-display);
++    font-weight: 700;
++    font-size: .85rem;
++    flex-shrink: 0;
++}
++
+ /* -------------------- buttons -------------------- */
+ 
+ .btn {

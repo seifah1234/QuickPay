@@ -211,7 +211,8 @@ namespace QuickPay.BLL.Services.Implementation
                 AccessToken = accessToken,
                 AccessTokenExpiresAt = accessTokenExpiresAt,
                 RefreshToken = refreshTokenValue,
-                RefreshTokenExpiresAt = refreshTokenExpiresAt
+                RefreshTokenExpiresAt = refreshTokenExpiresAt,
+                IsAdmin = user.IsAdmin
             };
         }
 

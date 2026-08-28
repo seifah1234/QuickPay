@@ -1,0 +1,51 @@
+﻿@using QuickPay.BLL.DTOs.Admin
+@model IEnumerable<AdminWalletDto>
+
+@{
+    ViewData["Title"] = "All Wallets";
+}
+
+<div class="container py-5">
+
+    <h2 class="mb-4">All Wallets</h2>
+
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Owner / Members</th>
+                <th>Balance</th>
+                <th>Status</th>
+                <th>Created</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var wallet in Model)
+            {
+                <tr>
+                    <td>@wallet.Name</td>
+                    <td>
+                        <span class="badge @(wallet.Type == "Personal" ? "bg-secondary" : "bg-info text-dark")">
+                            @wallet.Type
+                        </span>
+                    </td>
+                    <td>@wallet.OwnerDisplay</td>
+                    <td>@wallet.Balance.ToString("N2") @wallet.Currency</td>
+                    <td>
+                        @if (wallet.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </td>
+                    <td>@wallet.CreatedAt.ToString("d MMM yyyy")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+</div>

@@ -19,6 +19,21 @@
         }
     }
 }
+﻿@inject QuickPay.DAL.UnitOfWork.IUnitOfWork UnitOfWork
+@inject QuickPay.BLL.Services.Interfaces.ICurrentUserService CurrentUserService
+@{
+    bool isAdmin = false;
+    string? currentUserName = null;
+
+    if (User.Identity?.IsAuthenticated == true)
+    {
+        var currentUserId = CurrentUserService.GetCurrentUserId();
+        var currentUser = await UnitOfWork.Users.GetByIdAsync(currentUserId);
+        isAdmin = currentUser?.IsAdmin ?? false;
+        currentUserName = currentUser?.UserName;
+    }
+}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -36,32 +51,90 @@
 <body>
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark mb-4">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">QuickPay</a>
+            <div class="container-fluid px-4">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                    <span class="brand-icon"></span>
+                    QuickPay
+                </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+
                     <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Wallet" asp-action="Index">Wallets</a>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="walletsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                                    <path d="M0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V4Zm1 0v1h14V4H1Zm14 2H1v5h14V6ZM2 9.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Z" />
+                                </svg>
+                                Wallets
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="walletsDropdown">
+                                <li><a class="dropdown-item" asp-area="" asp-controller="Wallet" asp-action="Index">My Wallets</a></li>
+                                <li><a class="dropdown-item" asp-area="" asp-controller="SharedWallet" asp-action="Index">Shared Wallets</a></li>
+                                <li><a class="dropdown-item" asp-area="" asp-controller="LinkedAccounts" asp-action="Index">Linked Accounts</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="paymentsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                                    <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z" />
+                                </svg>
+                                Payments
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="paymentsDropdown">
+                                <li><a class="dropdown-item" asp-area="" asp-controller="Transfer" asp-action="Index">Transfer</a></li>
+                                <li><a class="dropdown-item" asp-area="" asp-controller="SmartSplit" asp-action="Index">Smart Split</a></li>
+                                <li><a class="dropdown-item" asp-area="" asp-controller="TransactionHistory" asp-action="Index">Transaction History</a></li>
+                            </ul>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Transfer" asp-action="Index">Transfer</a>
+                            <a class="nav-link" asp-area="" asp-controller="Notifications" asp-action="Index">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                                    <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zM8 1.918l-.797.161A4.002 4.002 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4.002 4.002 0 0 0-3.203-3.92L8 1.917zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 9.073 3 8c0-2.754 1.781-5.05 4.258-5.74A2 2 0 1 1 9.742 2.26C12.219 2.95 14 5.246 14 8c0 1.073.32 2.2 1.22 4z" />
+                                </svg>
+                                Notifications
+                                <span class="badge rounded-pill bg-warning text-dark ms-1">3</span>
+                            </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="TransactionHistory" asp-action="Index">History</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Notifications" asp-action="Index">Notifications</a>
-                        </li>
+                        @if (isAdmin)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Admin" asp-action="Index">
+                                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                                        <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zM8 4a1 1 0 0 1 1 1v3.586l2.707 2.707a1 1 0 0 1-1.414 1.414L7 9.414V5a1 1 0 0 1 1-1z" />
+                                    </svg>
+                                    Admin Dashboard
+                                </a>
+                            </li>
+                        }
                     </ul>
                     <ul class="navbar-nav">
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Auth" asp-action="Login">Log in</a>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userMenuDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="qp-avatar me-2">@((currentUserName ?? "?").Substring(0, 1).ToUpper())</span>
+                                @(currentUserName ?? "Account")
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenuDropdown">
+                                <li><h6 class="dropdown-header">Signed in as @currentUserName</h6></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li>
+                                    <form asp-action="Logout" asp-controller="Auth" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="dropdown-item qp-logout-btn">
+                                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                                                <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z" />
+                                                <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z" />
+                                            </svg>
+                                            Log Out
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
                         </li>
                     </ul>
+
                 </div>
             </div>
         </nav>
@@ -95,6 +168,7 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

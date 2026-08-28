@@ -27,14 +27,35 @@ namespace QuickPay.PL.Controllers
             var effectivePageSize = pageSize <= 0 ? 20 : pageSize;
 
             var history = await _historyService.GetUserHistoryAsync(
-                userId,
-                effectivePageNumber,
-                effectivePageSize,
-                cancellationToken);
+      userId,
+      effectivePageNumber,
+      effectivePageSize,
+      cancellationToken: cancellationToken);
 
             ViewBag.PageNumber = effectivePageNumber;
 
-            return View(history);
+            return View(history.AsEnumerable());
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Filter(
+            string? filterBy,
+            string? filterValue,
+            int pageNumber = 1,
+            int pageSize = int.MaxValue,
+            CancellationToken cancellationToken = default)
+        {
+            var userId = _currentUserService.GetCurrentUserId();
+
+            var history = await _historyService.GetUserHistoryAsync(
+                userId,
+                pageNumber,
+                pageSize,
+                filterBy,
+                filterValue,
+                cancellationToken);
+
+            return Json(history);
         }
     }
 }

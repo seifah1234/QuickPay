@@ -12,6 +12,10 @@ namespace QuickPay.DAL.Repositries.Interfaces
             string email,
             CancellationToken cancellationToken = default);
 
+        Task<User?> GetByIdentifierAsync(
+            string identifier,
+            CancellationToken cancellationToken = default);
+
         Task<bool> ExistsByEmailAsync(
             string email,
             CancellationToken cancellationToken = default);
@@ -50,5 +54,7 @@ namespace QuickPay.DAL.Repositries.Interfaces
             string providerKey,
             CancellationToken cancellationToken = default);
         
+
+        Task<List<User>?> GetAllAsync(CancellationToken cancellationToken);
     }
 }

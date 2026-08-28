@@ -1,94 +1,184 @@
 @using QuickPay.BLL.ViewModels.Auth
 @model RegisterViewModel
-
 @{
+    Layout = "_EmptyLayout";
     ViewData["Title"] = "Create Account";
 }
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-body p-4">
+<div class="auth-wrapper">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10 col-xl-11">
+                <div class="card auth-card">
+                    <div class="card-body p-0">
+                        <div class="row g-0">
+                            <!-- Left Side - Brand/Visual -->
+                            <div class="col-lg-5 auth-visual-side d-none d-lg-flex">
+                                <div class="auth-visual-content">
+                                    <div class="auth-logo mb-4">
+                                        <span class="logo-icon"></span>
+                                    </div>
+                                    <h2 class="auth-visual-title">Join QuickPay</h2>
+                                    <p class="auth-visual-text">
+                                        Create your account in minutes and start managing your money smarter.
+                                    </p>
+                                    <div class="auth-visual-features">
+                                        <div class="auth-feature-item">
+                                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                                                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z" />
+                                            </svg>
+                                            Multiple Wallets
+                                        </div>
+                                        <div class="auth-feature-item">
+                                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                                                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z" />
+                                            </svg>
+                                            Smart Split
+                                        </div>
+                                        <div class="auth-feature-item">
+                                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                                                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z" />
+                                            </svg>
+                                            Transaction History
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                    <h2 class="mb-1">Create Account</h2>
-                    <p class="text-muted mb-4">
-                        Join QuickPay in a minute.
-                    </p>
+                            <!-- Right Side - Form -->
+                            <div class="col-lg-7">
+                                <div class="auth-form-side p-4 p-lg-5">
+                                    <div class="text-center mb-4 d-lg-none">
+                                        <div class="auth-logo mb-3">
+                                            <span class="logo-icon"></span>
+                                        </div>
+                                    </div>
 
-                    @if (TempData["ErrorMessage"] != null)
-                    {
-                        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
-                            @TempData["ErrorMessage"]
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    <h2 class="mb-2">Create Account</h2>
+                                    <p class="text-muted mb-4">
+                                        Join QuickPay in a minute.
+                                    </p>
+
+                                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                                    <form asp-action="Register" asp-controller="Auth" method="post">
+                                        @Html.AntiForgeryToken()
+
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label asp-for="UserName" class="form-label">Full Name</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                                            <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
+                                                            <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z" />
+                                                        </svg>
+                                                    </span>
+                                                    <input asp-for="UserName" class="form-control" placeholder="John Doe" />
+                                                </div>
+                                                <span asp-validation-for="UserName" class="text-danger"></span>
+                                            </div>
+
+                                            <div class="col-md-6 mb-3">
+                                                <label asp-for="Email" class="form-label">Email Address</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                                            <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z" />
+                                                        </svg>
+                                                    </span>
+                                                    <input asp-for="Email" class="form-control" placeholder="name@example.com" />
+                                                </div>
+                                                <span asp-validation-for="Email" class="text-danger"></span>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label asp-for="PhoneNumber" class="form-label">Phone Number</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                                        <path fill-rule="evenodd" d="M1.885.511a1.745 1.745 0 0 1 2.61.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.678.678 0 0 0 .178.643l2.457 2.457a.678.678 0 0 0 .644.178l2.189-.547a1.745 1.745 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.634 18.634 0 0 1-7.01-4.42 18.634 18.634 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877L1.885.511z" />
+                                                    </svg>
+                                                </span>
+                                                <input asp-for="PhoneNumber" class="form-control" placeholder="+20 1XX XXX XXXX" />
+                                            </div>
+                                            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label asp-for="Password" class="form-label">Password</label>
+                                                <div class="input-group password-toggle">
+                                                    <span class="input-group-text">
+                                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                                            <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
+                                                        </svg>
+                                                    </span>
+                                                    <input asp-for="Password" class="form-control" placeholder="Min. 8 characters" />
+                                                    <button type="button" class="toggle-btn" onclick="togglePassword('Password')" aria-label="Toggle password visibility">
+                                                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                                                            <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z" />
+                                                            <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                                <span asp-validation-for="Password" class="text-danger"></span>
+                                            </div>
+
+                                            <div class="col-md-6 mb-3">
+                                                <label asp-for="ConfirmPassword" class="form-label">Confirm Password</label>
+                                                <div class="input-group password-toggle">
+                                                    <span class="input-group-text">
+                                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                                            <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
+                                                        </svg>
+                                                    </span>
+                                                    <input asp-for="ConfirmPassword" class="form-control" placeholder="Repeat password" />
+                                                    <button type="button" class="toggle-btn" onclick="togglePassword('ConfirmPassword')" aria-label="Toggle password visibility">
+                                                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                                                            <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z" />
+                                                            <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                                <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                                            </div>
+                                        </div>
+
+                                        <button type="submit" class="btn btn-primary w-100 mb-3">
+                                            Create Account
+                                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="ms-2">
+                                                <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z" />
+                                            </svg>
+                                        </button>
+
+                                        <div class="auth-divider">or sign up with</div>
+
+                                        <div class="social-login">
+                                            <button type="button" class="btn btn-outline-secondary">
+                                                <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                                                    <path d="M15.545 6.558a9.42 9.42 0 0 1 .139 1.626c0 2.434-.87 4.492-2.384 5.885h.002C11.978 15.292 10.158 16 8 16A8 8 0 1 1 8 0a7.689 7.689 0 0 1 5.352 2.082l-2.284 2.284A4.347 4.347 0 0 0 8 3.166c-2.087 0-3.86 1.408-4.492 3.304a4.792 4.792 0 0 0 0 3.063h.003c.635 1.893 2.405 3.301 4.492 3.301 1.078 0 2.004-.276 2.722-.764h-.003a3.702 3.702 0 0 0 1.599-2.431H8v-3.08h7.545z" />
+                                                </svg>
+                                                Google
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary">
+                                                <svg width="18" height="18" fill="#1877F2" viewBox="0 0 16 16">
+                                                    <path d="M16 8.049c0-4.446-3.582-8.05-8-8.05C3.58 0-.002 3.603-.002 8.05c0 4.017 2.926 7.347 6.75 7.951v-5.625h-2.03V8.05H6.75V6.275c0-2.017 1.195-3.131 3.022-3.131.876 0 1.791.157 1.791.157v1.98h-1.009c-.993 0-1.303.621-1.303 1.258v1.51h2.218l-.354 2.326H9.25V16c3.824-.604 6.75-3.934 6.75-7.951z" />
+                                                </svg>
+                                                Facebook
+                                            </button>
+                                        </div>
+                                    </form>
+
+                                    <p class="text-center mt-4 mb-0">
+                                        Already have an account?
+                                        <a asp-action="Login" asp-controller="Auth">Log in</a>
+                                    </p>
+                                </div>
+                            </div>
                         </div>
-                    }
-                    @if (TempData["SuccessMessage"] != null)
-                    {
-                        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
-                            @TempData["SuccessMessage"]
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    }
-                    @if (TempData["InfoMessage"] != null)
-                    {
-                        <div class="alert alert-info alert-dismissible fade show mb-3" role="alert">
-                            @TempData["InfoMessage"]
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    }
-
-                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-
-                    <form asp-action="Register" asp-controller="Auth" method="post">
-                        @Html.AntiForgeryToken()
-
-                        <div class="mb-3">
-                            <label asp-for="UserName" class="form-label"></label>
-                            <input asp-for="UserName" class="form-control" />
-                            <span asp-validation-for="UserName" class="text-danger"></span>
-                        </div>
-
-                        <div class="mb-3">
-                            <label asp-for="Email" class="form-label"></label>
-                            <input asp-for="Email" class="form-control" />
-                            <span asp-validation-for="Email" class="text-danger"></span>
-                        </div>
-
-                        <div class="mb-3">
-                            <label asp-for="PhoneNumber" class="form-label"></label>
-                            <input asp-for="PhoneNumber" class="form-control" />
-                            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
-                        </div>
-
-                        <div class="mb-3">
-                            <label asp-for="Password" class="form-label"></label>
-                            <input asp-for="Password" class="form-control" />
-                            <span asp-validation-for="Password" class="text-danger"></span>
-                        </div>
-
-                        <div class="mb-4">
-                            <label asp-for="ConfirmPassword" class="form-label"></label>
-                            <input asp-for="ConfirmPassword" class="form-control" />
-                            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary w-100">
-                            Create Account
-                        </button>
-
-                    </form>
-
-                    <form asp-action="GoogleLogin" asp-controller="Auth" method="get" class="text-center mt-3 mb-0">
-                        <button type="submit" class="btn btn-primary w-100">Continue with Google</button>
-                    </form>
-
-                    <p class="text-center mt-3 mb-0">
-                        Already have an account?
-                        <a asp-action="Login" asp-controller="Auth">Log in</a>
-                    </p>
-
-
+                    </div>
                 </div>
             </div>
         </div>
@@ -98,4 +188,11 @@
 @section Scripts
 {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        function togglePassword(inputId) {
+            const passwordInput = document.getElementById(inputId);
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+        }
+    </script>
 }

@@ -10,10 +10,12 @@ namespace QuickPay.BLL.Services.Implementation
     public class WalletService : IWalletService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly INotificationService _notificationService;
 
-        public WalletService(IUnitOfWork unitOfWork)
+        public WalletService(IUnitOfWork unitOfWork, INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
+            _notificationService = notificationService;
         }
 
         public async Task<IEnumerable<WalletDto>> GetMyWalletsAsync(
@@ -47,6 +49,11 @@ namespace QuickPay.BLL.Services.Implementation
 
             await _unitOfWork.Wallets.AddAsync(wallet, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _notificationService.NotifyAsync(
+    wallet.UserId,
+    "WalletCreated",
+    $"A new wallet named \"{wallet.Name}\" has been created.",
+    cancellationToken);
 
             return ToDto(wallet);
         }
@@ -70,6 +77,11 @@ namespace QuickPay.BLL.Services.Implementation
             wallet.UpdatedAt = DateTime.UtcNow;
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _notificationService.NotifyAsync(
+    wallet.UserId,
+    "WalletRenamed",
+    $"Your wallet was renamed to \"{wallet.Name}\".",
+    cancellationToken);
 
             return ToDto(wallet);
         }
@@ -105,6 +117,11 @@ namespace QuickPay.BLL.Services.Implementation
             wallet.UpdatedAt = DateTime.UtcNow;
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _notificationService.NotifyAsync(
+    wallet.UserId,
+    "WalletDeleted",
+    $"Your wallet \"{wallet.Name}\" has been closed.",
+    cancellationToken);
         }
 
         public async Task<WalletDto> DepositAsync(
@@ -186,6 +203,14 @@ namespace QuickPay.BLL.Services.Implementation
                 }
 
                 await _unitOfWork.CommitTransactionAsync(cancellationToken);
+                string action = isDeposit ? "deposited" : "withdrew";
+                string notifType = isDeposit ? "DepositSucceeded" : "WithdrawSucceeded";
+
+                await _notificationService.NotifyAsync(
+                    request.CurrentUserId,
+                    notifType,
+                    $"You {action} {request.Amount} EGP {(isDeposit ? "into" : "from")} \"{wallet.Name}\".",
+                    cancellationToken);
 
                 return ToDto(wallet);
             }

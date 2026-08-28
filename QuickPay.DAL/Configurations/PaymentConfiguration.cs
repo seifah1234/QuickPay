@@ -35,6 +35,11 @@ namespace QuickPay.DAL.Configurations
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.HasOne(x => x.SettlementWallet)
+                .WithMany()
+                .HasForeignKey(x => x.SettlementWalletId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.HasOne(x => x.SplitGroup)
                 .WithOne(x => x.Payment)
                 .HasForeignKey<SplitGroup>(x => x.PaymentId)
