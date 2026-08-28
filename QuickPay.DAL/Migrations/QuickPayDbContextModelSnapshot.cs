@@ -22,7 +22,6 @@ namespace QuickPay.DAL.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("QuickPay.DAL.Entities.ExternalLogin", b =>
             modelBuilder.Entity("QuickPay.DAL.Entities.AuditLog", b =>
                 {
                     b.Property<int>("Id")
@@ -31,17 +30,6 @@ namespace QuickPay.DAL.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Provider")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("ProviderUserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
                     b.Property<string>("Action")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -108,13 +96,43 @@ namespace QuickPay.DAL.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("UserId");
+
+                    b.ToTable("BankAccounts", (string)null);
+                });
+
+            modelBuilder.Entity("QuickPay.DAL.Entities.ExternalLogin", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ProviderUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
                     b.HasIndex("UserId", "ProviderUserId")
                         .IsUnique();
 
                     b.ToTable("ExternalLogins", (string)null);
-                    b.HasIndex("UserId");
-
-                    b.ToTable("BankAccounts", (string)null);
                 });
 
             modelBuilder.Entity("QuickPay.DAL.Entities.FinancialAccount", b =>
@@ -573,6 +591,9 @@ namespace QuickPay.DAL.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsAdmin")
                         .HasColumnType("bit");
 
@@ -644,10 +665,6 @@ namespace QuickPay.DAL.Migrations
                     b.HasDiscriminator().HasValue("Wallet");
                 });
 
-            modelBuilder.Entity("QuickPay.DAL.Entities.ExternalLogin", b =>
-                {
-                    b.HasOne("QuickPay.DAL.Entities.User", "User")
-                        .WithMany("ExternalLogins")
             modelBuilder.Entity("QuickPay.DAL.Entities.AuditLog", b =>
                 {
                     b.HasOne("QuickPay.DAL.Entities.User", "User")
@@ -663,6 +680,17 @@ namespace QuickPay.DAL.Migrations
                 {
                     b.HasOne("QuickPay.DAL.Entities.User", "User")
                         .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("QuickPay.DAL.Entities.ExternalLogin", b =>
+                {
+                    b.HasOne("QuickPay.DAL.Entities.User", "User")
+                        .WithMany("ExternalLogins")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

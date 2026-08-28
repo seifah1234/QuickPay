@@ -2,6 +2,9 @@
 @using System.Security.Claims
 @using System.IdentityModel.Tokens.Jwt
 @inject IUnitOfWork UnitOfWork
+@inject QuickPay.DAL.UnitOfWork.IUnitOfWork UnitOfWork
+@inject QuickPay.BLL.Services.Interfaces.ICurrentUserService CurrentUserService
+
 @{
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
     bool needsPhone = false;
@@ -19,8 +22,6 @@
         }
     }
 }
-﻿@inject QuickPay.DAL.UnitOfWork.IUnitOfWork UnitOfWork
-@inject QuickPay.BLL.Services.Interfaces.ICurrentUserService CurrentUserService
 @{
     bool isAdmin = false;
     string? currentUserName = null;

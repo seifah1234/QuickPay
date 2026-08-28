@@ -269,7 +269,7 @@ namespace QuickPay.PL.Controllers
             {
                 return Redirect(returnUrl);
             }
-            return RedirectToAction("Index", "Home");
+            return RedirectToPostLoginDestination(result);
         }
 
 

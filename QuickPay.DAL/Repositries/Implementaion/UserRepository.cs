@@ -120,7 +120,7 @@ namespace QuickPay.DAL.Repositries.Implementaion
  
             await _context.ExternalLogins.AddAsync(login, cancellationToken);
         }
- 
+
         private static ExternalLogin BuildExternalLogin(string provider, string providerKey)
         {
             return new ExternalLogin
@@ -128,6 +128,8 @@ namespace QuickPay.DAL.Repositries.Implementaion
                 Provider = provider,
                 ProviderUserId = providerKey
             };
+        }
+
         public async Task<List<User>?> GetAllAsync(CancellationToken cancellationToken)
         {
             return await _context.Users.ToListAsync(cancellationToken);

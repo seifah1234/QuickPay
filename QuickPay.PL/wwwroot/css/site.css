@@ -899,9 +899,10 @@ body {
 
 /* Social login buttons */
 .social-login {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: inline-flex;
     gap: 1rem;
+    align-items: center;
+    justify-content: center;
     margin-bottom: 1.5rem;
 }
 
