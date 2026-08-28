@@ -6,9 +6,11 @@
 
         public string Email { get; set; } = null!;
 
-        public string PhoneNumber { get; set; } = null!;
+        public string PhoneNumber { get; set; } = string.Empty;
 
-        public string PasswordHash { get; set; } = null!;
+        public string PasswordHash { get; set; } = string.Empty;
+
+        public bool IsExternalUser { get; set; } = false;
 
         public bool IsPhoneVerified { get; set; }
 
@@ -30,5 +32,7 @@
         // column was removed - see the RemoveOwnerColumn migration).
         public ICollection<SharedWalletMember> SharedWalletMemberships { get; set; }
             = new List<SharedWalletMember>();
+        
+        public ICollection<ExternalLogin> ExternalLogins { get; set; } = new  List<ExternalLogin>();
     }
 }

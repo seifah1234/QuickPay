@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Options;
 using QuickPay.BLL.DTOs.Auth;
 using QuickPay.BLL.Services.Interfaces;
 using QuickPay.BLL.Settings;
@@ -15,6 +15,7 @@ namespace QuickPay.BLL.Services.Implementation
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IOtpService _otpService;
         private readonly JwtSettings _jwtSettings;
+        private readonly int MaxUserNameAttempts = 5;
 
         public AuthService(
             IUnitOfWork unitOfWork,
@@ -50,6 +51,11 @@ namespace QuickPay.BLL.Services.Implementation
                     request.PhoneNumber, cancellationToken))
             {
                 return Fail("An account with this phone number already exists.");
+            }
+
+            if (string.IsNullOrEmpty(request.Password))
+            {
+                return Fail("Password is required.");
             }
 
             var user = new User
@@ -215,5 +221,123 @@ namespace QuickPay.BLL.Services.Implementation
             IsSuccess = false,
             Message = message
         };
+
+        public async Task<AuthResultDto> ExternalLoginAsync(
+            ExternalLoginRequestDto? request,
+            CancellationToken cancellationToken = default)
+        {
+            if (request is null)
+                throw new ArgumentNullException(nameof(request));
+            if (string.IsNullOrWhiteSpace(request.Provider))
+                throw new ArgumentException("Provider is required.", nameof(request));
+            if (string.IsNullOrWhiteSpace(request.ProviderKey))
+                throw new ArgumentException("ProviderKey is required.", nameof(request));
+ 
+            // 1. Already linked -> just return the existing user, no writes needed.
+            var linkedUser = await _unitOfWork.Users.GetByExternalLoginAsync(
+                request.Provider, request.ProviderKey, cancellationToken);
+ 
+            if (linkedUser is not null)
+                return await IssueTokensAsync(linkedUser, cancellationToken);
+ 
+            // 2. Not linked yet, but an account with this email already exists -> link it.
+            if (!string.IsNullOrWhiteSpace(request.Email))
+            {
+                var userByEmail = await _unitOfWork.Users.GetByEmailAsync(
+                    request.Email, cancellationToken);
+ 
+                if (userByEmail is not null)
+                {
+                    await _unitOfWork.Users.AddExternalLoginAsync(
+                        userByEmail.Id, request.Provider, request.ProviderKey, cancellationToken);
+ 
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
+                    return await IssueTokensAsync(userByEmail, cancellationToken);
+                }
+            }
+ 
+            // 3. No match at all -> brand new user, created together with the external login
+            //    in a single SaveChangesAsync so both rows commit atomically.
+            var userName = await GenerateUniqueUserNameAsync(request, cancellationToken);
+ 
+            var newUser = new User
+            {
+                Email = request.Email,
+                UserName = userName
+            };
+ 
+            await _unitOfWork.Users.CreateUserWithExternalLoginAsync(
+                newUser, request.Provider, request.ProviderKey, request.Name, cancellationToken);
+ 
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+ 
+            return await IssueTokensAsync(newUser, cancellationToken);
+        }
+
+        private async Task<string> GenerateUniqueUserNameAsync(
+                ExternalLoginRequestDto request,
+                CancellationToken cancellationToken)
+            {
+                var baseName = BuildBaseUserName(request);
+ 
+                var candidate = baseName;
+                for (var attempt = 0; attempt < MaxUserNameAttempts; attempt++)
+                {
+                    var exists = await _unitOfWork.Users.ExistsByUserNameAsync(candidate, cancellationToken);
+                    if (!exists)
+                        return candidate;
+ 
+                    candidate = $"{baseName}{Random.Shared.Next(1000, 9999)}";
+                }
+ 
+                // Extremely unlikely fallback: guarantees uniqueness without another DB round-trip.
+                return $"{baseName}{Guid.NewGuid():N}"[..Math.Min(baseName.Length + 8, 32)];
+            }
+ 
+            private static string BuildBaseUserName(ExternalLoginRequestDto request)
+            {
+                var source = !string.IsNullOrWhiteSpace(request.Email)
+                    ? request.Email.Split('@')[0]
+                    : !string.IsNullOrWhiteSpace(request.Name)
+                        ? request.Name
+                        : $"{request.Provider}user";
+                
+                var cleaned = new string(source.Where(char.IsLetterOrDigit).ToArray());
+                return string.IsNullOrEmpty(cleaned) ? "user" : cleaned.ToLowerInvariant();
+            }
+
+        public async Task<AuthResultDto> AddPhoneNumberAsync(
+            int userId,
+            string phoneNumber,
+            CancellationToken cancellationToken = default)
+        {
+            var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
+            if (user is null)
+            {
+                return FailedAuthResult("User account not found.");
+            }
+
+            if (await _unitOfWork.Users.ExistsByPhoneNumberAsync(phoneNumber, cancellationToken))
+            {
+                return FailedAuthResult("An account with this phone number already exists.");
+            }
+
+            user.PhoneNumber = phoneNumber;
+            user.IsPhoneVerified = false;
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            await _otpService.GenerateAndSendAsync(
+                user.Id,
+                user.PhoneNumber,
+                OtpPurpose.PhoneVerification,
+                cancellationToken);
+
+            return new AuthResultDto
+            {
+                IsSuccess = true,
+                Message = "Phone number updated. We sent a verification code to your phone."
+            };
+        }
     }
 }
+
