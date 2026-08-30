@@ -29,6 +29,7 @@ namespace QuickPay.BLL.Services.Implementation
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim(ClaimTypes.Name, user.UserName),
+                new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User"),
                 new Claim(JwtRegisteredClaimNames.Jti,
                     Guid.NewGuid().ToString()),
             };

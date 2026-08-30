@@ -6,7 +6,7 @@ using QuickPay.DAL.UnitOfWork;
 namespace QuickPay.PL.Controllers
 {
    
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         public class AuditLogController : Controller
         {
             private readonly IAuditLogService _auditLogService;

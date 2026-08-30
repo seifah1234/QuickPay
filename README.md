@@ -234,6 +234,10 @@ dotnet run --project QuickPay.PL
 
 > Copy `.env.example` to `.env` and fill in the required environment variables (DB connection string, JWT secret, OAuth client IDs/secrets, Payment Gateway API keys, SignalR config) before running.
 
+> **Note on OTP delivery:** for this project, OTP codes are written to the server console (`LogOtpDeliveryService`) instead of being sent by real SMS/email. This is intentional to keep the demo self-contained — swapping in a real provider only requires a new `IOtpDeliveryService` implementation.
+
+> **API documentation:** Swagger/OpenAPI is enabled in the Development environment at `/swagger`.
+
 ### Project Structure
 
 ```

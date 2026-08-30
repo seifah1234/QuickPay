@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using QuickPay.BLL.DTOs.PaymentGateway;
 using QuickPay.BLL.Services.Interfaces;
 
 namespace QuickPay.PL.Controllers
 {
+    [Authorize]
     public class LinkedAccountsController : Controller
     {
         private readonly ILinkedAccountsService _linkedAccountsService;

@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using QuickPay.BLL.Services.Interfaces;
 
 namespace QuickPay.PL.Controllers
 {
+    [Authorize]
     public class NotificationsController : Controller
     {
         private readonly INotificationService _notificationService;

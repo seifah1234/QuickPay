@@ -1,0 +1,4 @@
+# Uploaded profile photos are runtime content - don't commit them.
+*
+!.gitignore
+!.gitkeep

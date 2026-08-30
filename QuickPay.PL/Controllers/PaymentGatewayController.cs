@@ -5,6 +5,7 @@ using QuickPay.BLL.Services.Interfaces;
 
 namespace QuickPay.PL.Controllers
 {
+    [Authorize]
     public class PaymentGatewayController : Controller
     {
         private readonly IPaymentGatewayService _gatewayService;

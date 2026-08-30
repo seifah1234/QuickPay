@@ -25,6 +25,7 @@
 @{
     bool isAdmin = false;
     string? currentUserName = null;
+    string? currentUserImage = null;
 
     if (User.Identity?.IsAuthenticated == true)
     {
@@ -32,6 +33,7 @@
         var currentUser = await UnitOfWork.Users.GetByIdAsync(currentUserId);
         isAdmin = currentUser?.IsAdmin ?? false;
         currentUserName = currentUser?.UserName;
+        currentUserImage = currentUser?.ProfilePhotoUrl;
     }
 }
 
@@ -114,11 +116,21 @@
                     <ul class="navbar-nav">
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userMenuDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <span class="qp-avatar me-2">@((currentUserName ?? "?").Substring(0, 1).ToUpper())</span>
+                                @if (string.IsNullOrEmpty(currentUserImage))
+                                {
+                                    <span class="qp-avatar me-2">@((currentUserName ?? "?").Substring(0, 1).ToUpper())</span>
+
+                                }
+                                else
+                                {
+                                    <img class="rounded-circle me-2" style="width:50px;height:50px;object-fit:cover;" src="@currentUserImage" alt="@((currentUserName ?? "?").Substring(0, 1).ToUpper())" />
+
+                                }
                                 @(currentUserName ?? "Account")
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenuDropdown">
                                 <li><h6 class="dropdown-header">Signed in as @currentUserName</h6></li>
+                                <li><a class="dropdown-item" asp-controller="Profile" asp-action="Index">My Profile</a></li>
                                 <li><hr class="dropdown-divider" /></li>
                                 <li>
                                     <form asp-action="Logout" asp-controller="Auth" method="post">

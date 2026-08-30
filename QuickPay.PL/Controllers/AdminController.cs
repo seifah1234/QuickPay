@@ -6,7 +6,7 @@ using QuickPay.DAL.UnitOfWork;
 
 namespace QuickPay.PL.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     public class AdminController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;

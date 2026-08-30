@@ -1,0 +1,96 @@
+@using QuickPay.BLL.ViewModels.Profile
+@model ProfileViewModel
+
+@{
+    ViewData["Title"] = "My Profile";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+
+                    <h2 class="mb-1">My Profile</h2>
+                    <p class="text-muted mb-4">
+                        Update your account details.
+                    </p>
+
+                    @if (TempData["SuccessMessage"] is not null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="d-flex align-items-center mb-4">
+                        @if (!string.IsNullOrWhiteSpace(Model.ProfilePhotoUrl))
+                        {
+                            <img src="@Model.ProfilePhotoUrl" alt="Profile photo"
+                                 class="rounded-circle me-3"
+                                 style="width:72px;height:72px;object-fit:cover;" />
+                        }
+                        else
+                        {
+                            <span class="qp-avatar me-3" style="width:72px;height:72px;font-size:1.5rem;">
+                                @((Model.UserName.Length > 0 ? Model.UserName.Substring(0, 1) : "?").ToUpper())
+                            </span>
+                        }
+                        <form asp-action="UploadPhoto" asp-controller="Profile" method="post"
+                              enctype="multipart/form-data" class="d-flex align-items-center gap-2">
+                            @Html.AntiForgeryToken()
+                            <input type="file" name="photo" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.webp" />
+                            <button type="submit" class="btn btn-outline-secondary btn-sm text-nowrap">Upload</button>
+                        </form>
+                    </div>
+
+                    @if (Model.IsExternalUser)
+                    {
+                        <div class="alert alert-info mb-3" role="alert">
+                            This account signed in with an external provider (Google/Facebook).
+                        </div>
+                    }
+
+                    <form asp-action="Index" asp-controller="Profile" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-3">
+                            <label asp-for="UserName" class="form-label"></label>
+                            <input asp-for="UserName" class="form-control" />
+                            <span asp-validation-for="UserName" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label"></label>
+                            <input asp-for="Email" class="form-control" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Phone Number</label>
+                            <input type="text" class="form-control" value="@Model.PhoneNumber" disabled />
+                            <div class="form-text">
+                                Phone number changes go through
+                                <a asp-controller="Auth" asp-action="AddPhoneNumber">Add Phone Number</a>
+                                so it can be re-verified by OTP.
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            Save Changes
+                        </button>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <partial name="_ValidationScriptsPartial" />
+}

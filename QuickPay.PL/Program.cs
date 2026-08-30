@@ -29,6 +29,33 @@ LoadDotEnvInto(builder.Configuration, builder.Environment.ContentRootPath);
 builder.Services.AddControllersWithViews();
 builder.Services.AddSignalR();
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "QuickPay API",
+        Version = "v1",
+        Description = "Webhook and API endpoints for the QuickPay digital payment platform."
+    });
+
+    var jwtScheme = new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Paste a raw JWT access token (no \"Bearer \" prefix needed here)."
+    };
+
+    options.AddSecurityDefinition("Bearer", jwtScheme);
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        { jwtScheme, Array.Empty<string>() }
+    });
+});
+
 
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("Jwt"));
@@ -86,6 +113,7 @@ builder.Services.AddScoped<ISplitStrategyFactory, SplitStrategyFactory>();
 builder.Services.AddScoped<ISharedWalletService, SharedWalletService>();
 
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddScoped<IUserProfileService, UserProfileService>();
 
 builder.Services.AddAutoMapper(m => m.AddProfile<AuthProfile>());
 builder.Services.AddAutoMapper(m => m.AddProfile<TransferProfile>());
@@ -144,6 +172,11 @@ if (!app.Environment.IsDevelopment())
 else
 {
     app.UseDeveloperExceptionPage();
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "QuickPay API v1");
+    });
 }
 
 app.UseForwardedHeaders(new ForwardedHeadersOptions

@@ -18,6 +18,8 @@
         public bool IsAdmin { get; set; } = false;
         public bool IsActive { get; set; } = true;
 
+        public string? ProfilePhotoUrl { get; set; }
+
         public ICollection<RefreshToken> RefreshTokens { get; set; }
             = new List<RefreshToken>();
 
