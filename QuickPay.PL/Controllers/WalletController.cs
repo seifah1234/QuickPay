@@ -7,15 +7,23 @@ using Microsoft.AspNetCore.Authorization;
 [Authorize]
 public class WalletController : Controller
 {
+    private static readonly string[] WalletAlertTypes =
+    {
+        "WalletBlocked", "WalletActivated", "AccountBlocked", "AccountActivated"
+    };
+
     private readonly IWalletService _walletService;
     private readonly ICurrentUserService _currentUserService;
+    private readonly INotificationService _notificationService;
 
     public WalletController(
         IWalletService walletService,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        INotificationService notificationService)
     {
         _walletService = walletService;
         _currentUserService = currentUserService;
+        _notificationService = notificationService;
     }
 
     [HttpGet]
@@ -26,6 +34,20 @@ public class WalletController : Controller
         var wallets = await _walletService.GetMyWalletsAsync(
             userId, cancellationToken);
 
+        var notifications = await _notificationService.GetUserNotificationsAsync(
+            userId, cancellationToken);
+
+        var unreadAlerts = notifications
+            .Where(n => !n.IsRead && WalletAlertTypes.Contains(n.Type))
+            .OrderByDescending(n => n.CreatedAt)
+            .ToList();
+
+        foreach (var alert in unreadAlerts)
+        {
+            await _notificationService.MarkAsReadAsync(
+                alert.Id, userId, cancellationToken);
+        }
+
         var model = new WalletIndexViewModel
         {
             Wallets = wallets.Select(w => new WalletViewModel
@@ -34,7 +56,8 @@ public class WalletController : Controller
                 Name = w.Name,
                 Balance = w.Balance,
                 Currency = w.Currency
-            })
+            }),
+            WalletAlerts = unreadAlerts.Select(a => a.Message)
         };
 
         return View(model);

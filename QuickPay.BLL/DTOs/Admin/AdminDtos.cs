@@ -33,6 +33,8 @@
 
         public bool IsActive { get; set; }
 
+        public bool IsShared { get; set; }
+
         /// <summary>Owner's username for a Wallet, or a comma-separated member list for a SharedWallet.</summary>
         public string OwnerDisplay { get; set; } = string.Empty;
 

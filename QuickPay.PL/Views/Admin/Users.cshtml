@@ -14,6 +14,11 @@
         <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
     }
 
+    @if (TempData["SuccessMessage"] is not null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+
     <table class="table align-middle">
         <thead>
             <tr>
@@ -54,13 +59,27 @@
                     </td>
                     <td>@user.CreatedAt.ToString("d MMM yyyy")</td>
                     <td>
-                        <form asp-action="ToggleUserActive" asp-controller="Admin" method="post">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="id" value="@user.Id" />
-                            <button type="submit" class="btn btn-sm @(user.IsActive ? "btn-outline-danger" : "btn-outline-success")">
-                                @(user.IsActive ? "Disable" : "Enable")
-                            </button>
-                        </form>
+                        @if (user.Id == (int)(ViewBag.CurrentUserId ?? 0))
+                        {
+                            <span class="text-muted small">(this is you)</span>
+                        }
+                        else
+                        {
+                            <form asp-action="ToggleUserActive" asp-controller="Admin" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@user.Id" />
+                                <button type="submit" class="btn btn-sm @(user.IsActive ? "btn-outline-danger" : "btn-outline-success")">
+                                    @(user.IsActive ? "Disable" : "Enable")
+                                </button>
+                            </form>
+                            <form asp-action="ToggleAdminRole" asp-controller="Admin" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@user.Id" />
+                                <button type="submit" class="btn btn-sm @(user.Role == "Admin" ? "btn-outline-secondary" : "btn-outline-primary")">
+                                    @(user.Role == "Admin" ? "Remove Admin" : "Make Admin")
+                                </button>
+                            </form>
+                        }
                     </td>
                 </tr>
             }

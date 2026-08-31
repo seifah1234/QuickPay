@@ -9,6 +9,11 @@
 
     <h2 class="mb-4">All Wallets</h2>
 
+    @if (TempData["SuccessMessage"] is not null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+
     <table class="table align-middle">
         <thead>
             <tr>
@@ -18,6 +23,7 @@
                 <th>Balance</th>
                 <th>Status</th>
                 <th>Created</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
@@ -39,10 +45,20 @@
                         }
                         else
                         {
-                            <span class="badge bg-secondary">Inactive</span>
+                            <span class="badge bg-danger">Blocked</span>
                         }
                     </td>
                     <td>@wallet.CreatedAt.ToString("d MMM yyyy")</td>
+                    <td>
+                        <form asp-action="ToggleWalletActive" asp-controller="Admin" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@wallet.Id" />
+                            <input type="hidden" name="isShared" value="@wallet.IsShared.ToString().ToLower()" />
+                            <button type="submit" class="btn btn-sm @(wallet.IsActive ? "btn-outline-danger" : "btn-outline-success")">
+                                @(wallet.IsActive ? "Block" : "Activate")
+                            </button>
+                        </form>
+                    </td>
                 </tr>
             }
         </tbody>

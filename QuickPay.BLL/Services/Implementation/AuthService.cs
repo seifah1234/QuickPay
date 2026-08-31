@@ -14,6 +14,7 @@ namespace QuickPay.BLL.Services.Implementation
         private readonly IPasswordHasherService _passwordHasher;
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IOtpService _otpService;
+        private readonly IAuditLogService _auditLogService;
         private readonly JwtSettings _jwtSettings;
         private readonly int MaxUserNameAttempts = 5;
 
@@ -22,12 +23,14 @@ namespace QuickPay.BLL.Services.Implementation
             IPasswordHasherService passwordHasher,
             IJwtTokenService jwtTokenService,
             IOtpService otpService,
+            IAuditLogService auditLogService,
             IOptions<JwtSettings> jwtOptions)
         {
             _unitOfWork = unitOfWork;
             _passwordHasher = passwordHasher;
             _jwtTokenService = jwtTokenService;
             _otpService = otpService;
+            _auditLogService = auditLogService;
             _jwtSettings = jwtOptions.Value;
         }
 
@@ -70,6 +73,14 @@ namespace QuickPay.BLL.Services.Implementation
 
             await _unitOfWork.Users.AddAsync(user, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            await _auditLogService.LogAsync(
+                user.Id,
+                "Register",
+                "User",
+                user.Id,
+                $"New account registered ({user.Email}).",
+                cancellationToken);
 
             await _otpService.GenerateAndSendAsync(
                 user.Id,
@@ -141,6 +152,20 @@ namespace QuickPay.BLL.Services.Implementation
                 return FailedAuthResult(
                     "Please verify your phone number before logging in.");
             }
+
+            if (!user.IsActive)
+            {
+                return FailedAuthResult(
+                    "This account has been blocked by an admin. Please contact support.");
+            }
+
+            await _auditLogService.LogAsync(
+                user.Id,
+                "Login",
+                "User",
+                user.Id,
+                $"User logged in ({user.Email}).",
+                cancellationToken);
 
             return await IssueTokensAsync(user, cancellationToken);
         }
@@ -238,7 +263,15 @@ namespace QuickPay.BLL.Services.Implementation
                 request.Provider, request.ProviderKey, cancellationToken);
  
             if (linkedUser is not null)
+            {
+                if (!linkedUser.IsActive)
+                {
+                    return FailedAuthResult(
+                        "This account has been blocked by an admin. Please contact support.");
+                }
+
                 return await IssueTokensAsync(linkedUser, cancellationToken);
+            }
  
             // 2. Not linked yet, but an account with this email already exists -> link it.
             if (!string.IsNullOrWhiteSpace(request.Email))
@@ -248,6 +281,12 @@ namespace QuickPay.BLL.Services.Implementation
  
                 if (userByEmail is not null)
                 {
+                    if (!userByEmail.IsActive)
+                    {
+                        return FailedAuthResult(
+                            "This account has been blocked by an admin. Please contact support.");
+                    }
+
                     await _unitOfWork.Users.AddExternalLoginAsync(
                         userByEmail.Id, request.Provider, request.ProviderKey, cancellationToken);
  

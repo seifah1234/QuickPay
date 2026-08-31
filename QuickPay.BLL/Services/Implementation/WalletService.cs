@@ -11,11 +11,16 @@ namespace QuickPay.BLL.Services.Implementation
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly INotificationService _notificationService;
+        private readonly IAuditLogService _auditLogService;
 
-        public WalletService(IUnitOfWork unitOfWork, INotificationService notificationService)
+        public WalletService(
+            IUnitOfWork unitOfWork,
+            INotificationService notificationService,
+            IAuditLogService auditLogService)
         {
             _unitOfWork = unitOfWork;
             _notificationService = notificationService;
+            _auditLogService = auditLogService;
         }
 
         public async Task<IEnumerable<WalletDto>> GetMyWalletsAsync(
@@ -122,6 +127,14 @@ namespace QuickPay.BLL.Services.Implementation
     "WalletDeleted",
     $"Your wallet \"{wallet.Name}\" has been closed.",
     cancellationToken);
+
+            await _auditLogService.LogAsync(
+                currentUserId,
+                "DeleteWallet",
+                "Wallet",
+                wallet.Id,
+                $"Wallet \"{wallet.Name}\" was closed by its owner.",
+                cancellationToken);
         }
 
         public async Task<WalletDto> DepositAsync(
@@ -212,6 +225,14 @@ namespace QuickPay.BLL.Services.Implementation
                     $"You {action} {request.Amount} EGP {(isDeposit ? "into" : "from")} \"{wallet.Name}\".",
                     cancellationToken);
 
+                await _auditLogService.LogAsync(
+                    request.CurrentUserId,
+                    isDeposit ? "Deposit" : "Withdraw",
+                    "Wallet",
+                    wallet.Id,
+                    $"{(isDeposit ? "Deposited" : "Withdrew")} {request.Amount} {wallet.Currency}.",
+                    cancellationToken);
+
                 return ToDto(wallet);
             }
             catch
@@ -238,6 +259,12 @@ namespace QuickPay.BLL.Services.Implementation
             {
                 throw new UnauthorizedAccessException(
                     "You are not authorized to access this wallet.");
+            }
+
+            if (!wallet.IsActive)
+            {
+                throw new InvalidOperationException(
+                    "This wallet has been blocked or closed and can no longer be used.");
             }
 
             return wallet;

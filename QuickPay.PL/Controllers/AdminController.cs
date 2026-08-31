@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using QuickPay.BLL.DTOs.Admin;
 using QuickPay.BLL.Services.Interfaces;
+using QuickPay.DAL.Entities;
 using QuickPay.DAL.UnitOfWork;
 
 namespace QuickPay.PL.Controllers
@@ -11,13 +12,19 @@ namespace QuickPay.PL.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
+        private readonly IAuditLogService _auditLogService;
+        private readonly INotificationService _notificationService;
 
         public AdminController(
             IUnitOfWork unitOfWork,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService,
+            IAuditLogService auditLogService,
+            INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
+            _auditLogService = auditLogService;
+            _notificationService = notificationService;
         }
 
 
@@ -48,6 +55,7 @@ namespace QuickPay.PL.Controllers
                 return StatusCode(403, "Access denied — Admins only.");
             }
             var users = await _unitOfWork.Users.GetAllAsync(cancellationToken);
+            ViewBag.CurrentUserId = userId;
             return View(users.Select(u => new AdminUserDto
             {
                 Id = u.Id,
@@ -105,6 +113,8 @@ namespace QuickPay.PL.Controllers
             {
                 Id = w.Id,
                 Name = w.Name,
+                Type = "Personal",
+                IsShared = false,
                 Balance = w.Balance,
                 CreatedAt = w.CreatedAt,
                 Currency = w.Currency,
@@ -114,6 +124,8 @@ namespace QuickPay.PL.Controllers
             {
                 Id = sw.Id,
                 Name = sw.Name,
+                Type = "Shared",
+                IsShared = true,
                 Balance = sw.Balance,
                 CreatedAt = sw.CreatedAt,
                 Currency = sw.Currency,
@@ -126,6 +138,14 @@ namespace QuickPay.PL.Controllers
         [HttpPost]
         public async Task<IActionResult> ToggleUserActive(int id, CancellationToken cancellationToken)
         {
+            var adminId = _currentUserService.GetCurrentUserId();
+
+            if (id == adminId)
+            {
+                TempData["ErrorMessage"] = "You cannot block your own account.";
+                return RedirectToAction("Users");
+            }
+
             var user = await _unitOfWork.Users.GetByIdAsync(id, cancellationToken);
 
             if (user is null)
@@ -135,10 +155,144 @@ namespace QuickPay.PL.Controllers
 
             user.IsActive = !user.IsActive;
 
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            await _auditLogService.LogAsync(
+                adminId,
+                user.IsActive ? "ActivateUser" : "BlockUser",
+                "User",
+                user.Id,
+                $"{user.UserName} was {(user.IsActive ? "activated" : "blocked")} by an admin.",
+                cancellationToken);
+
+            await _notificationService.NotifyAsync(
+                user.Id,
+                user.IsActive ? "AccountActivated" : "AccountBlocked",
+                user.IsActive
+                    ? "Your account has been reactivated by an admin."
+                    : "Your account has been blocked by an admin. Contact support for help.",
+                cancellationToken);
+
+            return RedirectToAction("Users");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ToggleAdminRole(int id, CancellationToken cancellationToken)
+        {
+            var adminId = _currentUserService.GetCurrentUserId();
+
+            if (id == adminId)
+            {
+                TempData["ErrorMessage"] = "You cannot change your own admin role.";
+                return RedirectToAction("Users");
+            }
+
+            var user = await _unitOfWork.Users.GetByIdAsync(id, cancellationToken);
+
+            if (user is null)
+            {
+                return NotFound();
+            }
+
+            user.IsAdmin = !user.IsAdmin;
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
-            return RedirectToAction("Users");
 
+            await _auditLogService.LogAsync(
+                adminId,
+                user.IsAdmin ? "PromoteToAdmin" : "DemoteFromAdmin",
+                "User",
+                user.Id,
+                $"{user.UserName} was {(user.IsAdmin ? "promoted to" : "demoted from")} Admin.",
+                cancellationToken);
+
+            await _notificationService.NotifyAsync(
+                user.Id,
+                user.IsAdmin ? "PromotedToAdmin" : "DemotedFromAdmin",
+                user.IsAdmin
+                    ? "You have been granted Admin access."
+                    : "Your Admin access has been revoked.",
+                cancellationToken);
+
+            TempData["SuccessMessage"] =
+                $"{user.UserName} is {(user.IsAdmin ? "now an Admin" : "no longer an Admin")}. " +
+                "They will need to log in again for the change to take effect.";
+
+            return RedirectToAction("Users");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ToggleWalletActive(
+            int id,
+            bool isShared,
+            CancellationToken cancellationToken)
+        {
+            var adminId = _currentUserService.GetCurrentUserId();
+
+            if (isShared)
+            {
+                var sharedWallet = await _unitOfWork.SharedWallets.GetWithMembersAsync(
+                    id, cancellationToken);
+
+                if (sharedWallet is null)
+                {
+                    return NotFound();
+                }
+
+                sharedWallet.IsActive = !sharedWallet.IsActive;
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                await _auditLogService.LogAsync(
+                    adminId,
+                    sharedWallet.IsActive ? "ActivateWallet" : "BlockWallet",
+                    "SharedWallet",
+                    sharedWallet.Id,
+                    $"Shared wallet \"{sharedWallet.Name}\" was {(sharedWallet.IsActive ? "activated" : "blocked")} by an admin.",
+                    cancellationToken);
+
+                var message = sharedWallet.IsActive
+                    ? $"Your shared wallet \"{sharedWallet.Name}\" has been reactivated by an admin."
+                    : $"Your shared wallet \"{sharedWallet.Name}\" has been blocked by an admin.";
+
+                foreach (var member in sharedWallet.Members)
+                {
+                    await _notificationService.NotifyAsync(
+                        member.UserId,
+                        sharedWallet.IsActive ? "WalletActivated" : "WalletBlocked",
+                        message,
+                        cancellationToken);
+                }
+            }
+            else
+            {
+                var wallet = await _unitOfWork.Wallets.GetByIdAsync(id, cancellationToken);
+
+                if (wallet is null)
+                {
+                    return NotFound();
+                }
+
+                wallet.IsActive = !wallet.IsActive;
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                await _auditLogService.LogAsync(
+                    adminId,
+                    wallet.IsActive ? "ActivateWallet" : "BlockWallet",
+                    "Wallet",
+                    wallet.Id,
+                    $"Wallet \"{wallet.Name}\" was {(wallet.IsActive ? "activated" : "blocked")} by an admin.",
+                    cancellationToken);
+
+                await _notificationService.NotifyAsync(
+                    wallet.UserId,
+                    wallet.IsActive ? "WalletActivated" : "WalletBlocked",
+                    wallet.IsActive
+                        ? $"Your wallet \"{wallet.Name}\" has been reactivated by an admin."
+                        : $"Your wallet \"{wallet.Name}\" has been blocked by an admin.",
+                    cancellationToken);
+            }
+
+            return RedirectToAction("Wallets");
         }
     }
 }

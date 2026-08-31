@@ -6,6 +6,9 @@ namespace QuickPay.BLL.ViewModels
     {
         public IEnumerable<WalletViewModel> Wallets { get; set; }
             = Enumerable.Empty<WalletViewModel>();
+
+        public IEnumerable<string> WalletAlerts { get; set; }
+            = Enumerable.Empty<string>();
         
         [Required(ErrorMessage = "Please enter a wallet name.")]
         public string NewWalletName { get; set; } = string.Empty;

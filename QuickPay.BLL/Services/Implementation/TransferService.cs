@@ -14,11 +14,16 @@ namespace QuickPay.BLL.Services.Implementation
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly INotificationService _notificationService;
+        private readonly IAuditLogService _auditLogService;
 
-        public TransferService(IUnitOfWork unitOfWork, INotificationService notificationService)
+        public TransferService(
+            IUnitOfWork unitOfWork,
+            INotificationService notificationService,
+            IAuditLogService auditLogService)
         {
             _unitOfWork = unitOfWork;
             _notificationService = notificationService;
+            _auditLogService = auditLogService;
         }
 
         public async Task<TransferResultDto> TransferAsync(
@@ -136,6 +141,14 @@ namespace QuickPay.BLL.Services.Implementation
                     request.CurrentUserId,
                     "TransferSent",
                     $"You sent {request.Amount} EGP to {toOwnerName}.",
+                    cancellationToken);
+
+                await _auditLogService.LogAsync(
+                    request.CurrentUserId,
+                    "Transfer",
+                    "Transaction",
+                    transaction.Id,
+                    $"Transferred {request.Amount} EGP from account #{request.FromAccountId} to account #{request.ToAccountId}.",
                     cancellationToken);
 
                 if (toAccount is Wallet toWallet)
