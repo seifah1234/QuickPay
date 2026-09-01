@@ -5,10 +5,10 @@
     ViewData["Title"] = "Transaction History";
     var pageNumber = (int)(ViewBag.PageNumber ?? 1);
     var pageSize = (int)(ViewBag.PageSize ?? 10);
+    var hasNext = (bool)(ViewBag.HasNext ?? false);
 }
 
 <div class="container py-4">
-    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
         <div>
             <h1 class="qp-dashboard-title mb-1">Transaction History</h1>
@@ -22,7 +22,6 @@
         </a>
     </div>
 
-    <!-- Filters Card -->
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-transparent border-bottom py-3">
             <h5 class="mb-0 d-flex align-items-center">
@@ -34,7 +33,6 @@
         </div>
         <div class="card-body p-4">
             <div class="row g-3 align-items-end">
-                <!-- Filter By Dropdown -->
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Filter By</label>
                     <select id="filterBy" class="form-select">
@@ -46,10 +44,8 @@
                     </select>
                 </div>
 
-                <!-- Dynamic Filter Container -->
                 <div class="col-md-6">
                     <div id="filterContainer">
-                        <!-- Type Filter -->
                         <div id="typeFilter" class="filter-option d-none">
                             <label class="form-label fw-semibold">Transaction Type</label>
                             <select id="type" class="form-select">
@@ -62,7 +58,6 @@
                             </select>
                         </div>
 
-                        <!-- Status Filter -->
                         <div id="statusFilter" class="filter-option d-none">
                             <label class="form-label fw-semibold">Status</label>
                             <select id="status" class="form-select">
@@ -74,13 +69,11 @@
                             </select>
                         </div>
 
-                        <!-- Search Filter -->
                         <div id="searchFilter" class="filter-option d-none">
                             <label class="form-label fw-semibold">Search</label>
                             <input type="text" id="search" class="form-control" placeholder="Type to search..." />
                         </div>
 
-                        <!-- Date Range Filter -->
                         <div id="dateFilter" class="filter-option d-none">
                             <label class="form-label fw-semibold">Date Range</label>
                             <div class="d-flex gap-2">
@@ -92,7 +85,6 @@
                     </div>
                 </div>
 
-                <!-- Clear Filter Button -->
                 <div class="col-md-3">
                     <button type="button" id="clearFilter" class="btn btn-outline-secondary w-100">
                         <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
@@ -106,7 +98,6 @@
         </div>
     </div>
 
-    <!-- Transactions Table Card -->
     <div class="card shadow-sm">
         <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center">
             <h5 class="mb-0 d-flex align-items-center">
@@ -115,34 +106,36 @@
                 </svg>
                 Transactions
             </h5>
-            <span class="badge bg-primary rounded-pill">@Model.Count() Transactions</span>
+            <span class="badge bg-primary rounded-pill" id="transactionCount">@Model.Count() Transactions</span>
         </div>
         <div class="card-body p-0">
-            @if (Model == null || !Model.Any())
-            {
-                <div class="text-center py-5">
-                    <div class="qp-empty-icon mb-3">
-                        <svg width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V4Zm1 0v1h14V4H1Zm14 2H1v5h14V6ZM2 9.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Z" />
-                        </svg>
-                    </div>
-                    <p class="text-muted mb-0 fw-semibold">No transactions yet</p>
-                    <p class="text-muted small">Activity for this user will show up here once it happens.</p>
-                </div>
-            }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Transaction</th>
+                            <th class="text-end">Amount</th>
+                            <th>Status</th>
+                            <th class="pe-4">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionsTableBody">
+                        @if (Model == null || !Model.Any())
+                        {
                             <tr>
-                                <th class="ps-4">Transaction</th>
-                                <th class="text-end">Amount</th>
-                                <th>Status</th>
-                                <th class="pe-4">Date</th>
+                                <td colspan="4" class="text-center py-5">
+                                    <div class="qp-empty-icon mb-3">
+                                        <svg width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
+                                            <path d="M0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V4Zm1 0v1h14V4H1Zm14 2H1v5h14V6ZM2 9.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Z" />
+                                        </svg>
+                                    </div>
+                                    <p class="text-muted mb-0 fw-semibold">No transactions yet</p>
+                                    <p class="text-muted small">Activity for this user will show up here once it happens.</p>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
+                        }
+                        else
+                        {
                             @foreach (var t in Model)
                             {
                                 var typeLower = t.Type.ToLower();
@@ -207,31 +200,38 @@
                                     <td class="text-muted small text-nowrap pe-4">@t.CreatedAt.ToString("MMM d, yyyy · h:mm tt")</td>
                                 </tr>
                             }
-                        </tbody>
-                    </table>
-                </div>
-            }
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <!-- Pagination -->
-    @if (Model.Any())
-    {
-        <div class="d-flex justify-content-between align-items-center mt-4">
-            <div>
-                @if (pageNumber > 1)
-                {
-                    <a asp-action="Index" asp-route-pageNumber="@(pageNumber - 1)" class="btn btn-outline-secondary">
-                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
-                            <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z" />
-                        </svg>
-                        Previous
-                    </a>
-                }
-            </div>
-            <span class="text-muted">Page @pageNumber</span>
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <div>
+            @if (pageNumber > 1)
+            {
+                <a asp-action="Index" asp-route-pageNumber="@(pageNumber - 1)" class="btn btn-outline-secondary">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                        <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z" />
+                    </svg>
+                    Previous
+                </a>
+            }
         </div>
-    }
+        <span class="text-muted">Page @pageNumber</span>
+        <div>
+            @if (hasNext)
+            {
+                <a asp-action="Index" asp-route-pageNumber="@(pageNumber + 1)" class="btn btn-outline-secondary">
+                    Next
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="ms-2">
+                        <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z" />
+                    </svg>
+                </a>
+            }
+        </div>
+    </div>
 </div>
 
 <style>
@@ -267,6 +267,7 @@
             opacity: 0;
             transform: translateY(-5px);
         }
+
         to {
             opacity: 1;
             transform: translateY(0);
@@ -275,6 +276,9 @@
 </style>
 
 <script>
+    let currentFilterBy = "";
+    let currentFilterValue = "";
+
     const filterBy = document.getElementById("filterBy");
     const typeFilter = document.getElementById("typeFilter");
     const statusFilter = document.getElementById("statusFilter");
@@ -286,8 +290,8 @@
     const fromDate = document.getElementById("fromDate");
     const toDate = document.getElementById("toDate");
     const clearFilter = document.getElementById("clearFilter");
+    const transactionCount = document.getElementById("transactionCount");
 
-    // Debounce function for search input
     function debounce(func, wait) {
         let timeout;
         return function executedFunction(...args) {
@@ -363,6 +367,9 @@
     });
 
     function loadTransactions(filterByValue, filterValue) {
+        currentFilterBy = filterByValue;
+        currentFilterValue = filterValue;
+
         const url = `/TransactionHistory/Filter?filterBy=${encodeURIComponent(filterByValue)}&filterValue=${encodeURIComponent(filterValue)}`;
 
         fetch(url)
@@ -377,18 +384,21 @@
     }
 
     function updateTable(transactions) {
-        const tableBody = document.querySelector("table tbody");
+        const tableBody = document.getElementById("transactionsTableBody");
         if (!tableBody) return;
 
+        transactionCount.textContent = transactions.length + " Transactions";
         tableBody.innerHTML = "";
 
         if (transactions.length === 0) {
             tableBody.innerHTML = `
                     <tr>
-                        <td colspan="4" class="text-center text-muted py-5">
-                            <svg width="48" height="48" fill="currentColor" viewBox="0 0 16 16" class="mb-3">
-                                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />
-                            </svg>
+                        <td colspan="4" class="text-center py-5">
+                            <div class="qp-empty-icon mb-3">
+                                <svg width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />
+                                </svg>
+                            </div>
                             <p class="mb-1 fw-semibold">No transactions found</p>
                             <p class="small">Try adjusting your filters</p>
                         </td>

@@ -13,11 +13,6 @@ namespace QuickPay.BLL.Services.Implementation
             _unitOfWork = unitOfWork;
         }
 
-       
-
-
-
-
         public async Task<IEnumerable<TransactionHistoryDto>> GetUserHistoryAsync(
     int userId,
     int pageNumber,

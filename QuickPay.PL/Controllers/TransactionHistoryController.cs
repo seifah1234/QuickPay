@@ -1,63 +1,56 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using QuickPay.BLL.Services.Interfaces;
 
 namespace QuickPay.PL.Controllers
 {
-    [Authorize]
     public class TransactionHistoryController : Controller
     {
-        private readonly ITransactionHistoryService _historyService;
-        private readonly ICurrentUserService _currentUserService;
+        private readonly ITransactionHistoryService _transactionHistoryService;
 
-        public TransactionHistoryController(
-            ITransactionHistoryService historyService,
-            ICurrentUserService currentUserService)
+        public TransactionHistoryController(ITransactionHistoryService transactionHistoryService)
         {
-            _historyService = historyService;
-            _currentUserService = currentUserService;
+            _transactionHistoryService = transactionHistoryService;
         }
 
-        public async Task<IActionResult> Index(
-            int pageNumber,
-            int pageSize,
-            CancellationToken cancellationToken)
+        public async Task<IActionResult> Index(int pageNumber = 1, int pageSize = 10)
         {
-            var userId = _currentUserService.GetCurrentUserId();
+            var userId = GetCurrentUserId();
+            var transactions = await _transactionHistoryService.GetUserHistoryAsync(
+                userId, pageNumber, pageSize);
 
-            var effectivePageNumber = pageNumber <= 0 ? 1 : pageNumber;
-            var effectivePageSize = pageSize <= 0 ? 20 : pageSize;
+            ViewBag.PageNumber = pageNumber;
+            ViewBag.PageSize = pageSize;
+            ViewBag.HasNext = transactions.Count() == pageSize;
 
-            var history = await _historyService.GetUserHistoryAsync(
-      userId,
-      effectivePageNumber,
-      effectivePageSize,
-      cancellationToken: cancellationToken);
-
-            ViewBag.PageNumber = effectivePageNumber;
-
-            return View(history.AsEnumerable());
+            return View(transactions);
         }
 
         [HttpGet]
-        public async Task<IActionResult> Filter(
-            string? filterBy,
-            string? filterValue,
-            int pageNumber = 1,
-            int pageSize = int.MaxValue,
-            CancellationToken cancellationToken = default)
+        public async Task<IActionResult> Filter(string filterBy = "", string filterValue = "", int pageNumber = 1, int pageSize = 10)
         {
-            var userId = _currentUserService.GetCurrentUserId();
+            var userId = GetCurrentUserId();
+            var transactions = await _transactionHistoryService.GetUserHistoryAsync(
+                userId, pageNumber, pageSize, filterBy, filterValue);
 
-            var history = await _historyService.GetUserHistoryAsync(
-                userId,
-                pageNumber,
-                pageSize,
-                filterBy,
-                filterValue,
-                cancellationToken);
+            var result = transactions.Select(t => new
+            {
+                id = t.Id,
+                type = t.Type,
+                amount = t.Amount,
+                status = t.Status,
+                createdAt = t.CreatedAt,
+                direction = t.Direction
+            });
 
-            return Json(history);
+            return Json(result);
+        }
+
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst("sub")?.Value;
+
+            return int.TryParse(userIdClaim, out var userId) ? userId : 0;
         }
     }
 }

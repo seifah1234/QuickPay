@@ -1,10 +1,5 @@
-/* ============================================================
-   QuickPay design system - Enhanced Edition
-   Modern, eye-friendly palette with subtle gradients
-   ============================================================ */
 
 :root {
-    /* -- refined palette -- */
     --qp-ink: #1a1a2e;
     --qp-ink-soft: #2d2d44;
     --qp-muted: #6b7280;
@@ -12,25 +7,20 @@
     --qp-surface: #ffffff;
     --qp-line: #e2e8f0;
     --qp-line-soft: #eef2f6;
-    /* -- primary: calm indigo-blue -- */
     --qp-brand: #4f46e5;
     --qp-brand-dark: #4338ca;
     --qp-brand-darker: #3730a3;
     --qp-brand-tint: #eef2ff;
-    /* -- accent: warm gold -- */
     --qp-accent: #f59e0b;
     --qp-accent-dark: #d97706;
     --qp-accent-tint: #fef3c7;
-    /* -- semantic colors -- */
     --qp-danger: #ef4444;
     --qp-danger-tint: #fee2e2;
     --qp-success: #10b981;
     --qp-success-tint: #d1fae5;
-    /* -- refined typography -- */
     --qp-font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
     --qp-font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
     --qp-font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
-    /* -- softer shadows & borders -- */
     --qp-radius: 16px;
     --qp-radius-sm: 10px;
     --qp-shadow-sm: 0 2px 8px rgba(26, 26, 46, 0.06), 0 4px 16px rgba(26, 26, 46, 0.04);
@@ -38,7 +28,6 @@
     --qp-shadow-lg: 0 8px 24px rgba(26, 26, 46, 0.10), 0 24px 48px -12px rgba(26, 26, 46, 0.16);
 }
 
-/* -------------------- base -------------------- */
 
 html {
     font-size: 16px;
@@ -87,7 +76,6 @@ a {
     color: var(--qp-brand-darker);
 }
 
-/* focus ring */
 .btn:focus, .btn:active:focus,
 .btn-link.nav-link:focus,
 .form-control:focus, .form-check-input:focus, .form-select:focus {
@@ -95,7 +83,6 @@ a {
     border-color: var(--qp-brand) !important;
 }
 
-/* -------------------- money / ledger -------------------- */
 
 .amount,
 .qp-amount {
@@ -115,7 +102,6 @@ a {
         color: var(--qp-danger);
     }
 
-/* -------------------- navbar -------------------- */
 
 .navbar {
     background: linear-gradient(135deg, #312e81 0%, #4f46e5 50%, #6366f1 100%) !important;
@@ -177,7 +163,6 @@ a {
     filter: invert(1);
 }
 
-/* -------------------- navbar dropdowns -------------------- */
 
 .navbar .dropdown-menu {
     border: none;
@@ -214,9 +199,6 @@ a {
     vertical-align: .1em;
 }
 
-/* the Log Out action is a <button> inside a <form> so it actually
-   posts to /Auth/Logout, styled to look identical to the <a> items
-   around it */
 .qp-logout-btn {
     display: flex;
     align-items: center;
@@ -232,23 +214,19 @@ a {
         color: var(--qp-danger) !important;
     }
 
-/* user avatar in the top-right dropdown */
 .qp-avatar {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
     color: var(--qp-brand-darker);
     font-family: var(--qp-font-display);
     font-weight: 700;
-    font-size: .85rem;
     flex-shrink: 0;
 }
-
-/* -------------------- buttons -------------------- */
 
 .btn {
     font-family: var(--qp-font-body);
@@ -342,7 +320,6 @@ a {
     font-size: .85rem;
 }
 
-/* -------------------- cards -------------------- */
 
 .card {
     border: 1px solid var(--qp-line);
@@ -360,7 +337,6 @@ a {
         box-shadow: var(--qp-shadow-sm) !important;
     }
 
-/* wallet / balance cards */
 .qp-wallet-card {
     position: relative;
     overflow: hidden;
@@ -380,7 +356,6 @@ a {
         padding-left: 1.75rem;
     }
 
-/* -------------------- forms -------------------- */
 
 .form-label {
     font-weight: 600;
@@ -415,7 +390,6 @@ a {
     font-family: var(--qp-font-mono);
 }
 
-/* -------------------- alerts -------------------- */
 
 .alert {
     border: 1px solid transparent;
@@ -442,7 +416,6 @@ a {
     color: #92400e;
 }
 
-/* -------------------- badges -------------------- */
 
 .badge {
     font-family: var(--qp-font-mono);
@@ -462,7 +435,6 @@ a {
         box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
     }
 
-/* -------------------- tables -------------------- */
 
 .table {
     --bs-table-bg: transparent;
@@ -500,7 +472,6 @@ a {
         color: var(--qp-ink);
     }
 
-/* -------------------- list group -------------------- */
 
 .list-group-item {
     border: 1px solid var(--qp-line);
@@ -550,7 +521,6 @@ a {
         transform: none;
     }
 
-/* -------------------- footer -------------------- */
 
 .footer {
     border-top: 1px solid var(--qp-line);
@@ -564,7 +534,6 @@ a {
         text-decoration: underline;
     }
 
-/* -------------------- hero (home) -------------------- */
 
 .qp-hero {
     padding: 4rem 1rem 3rem;
@@ -595,7 +564,6 @@ a {
         margin: 0 auto 2rem;
     }
 
-/* -------------------- misc -------------------- */
 
 body {
     margin-bottom: 60px;
@@ -612,7 +580,6 @@ body {
     text-align: start;
 }
 
-/* Loading animation */
 @keyframes qp-pulse {
     0%, 100% {
         opacity: 1;
@@ -623,7 +590,6 @@ body {
     }
 }
 
-/* Smooth transitions for interactive elements */
 .btn, .card, .list-group-item, .navbar .nav-link {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -639,12 +605,6 @@ body {
     }
 }
 
-/* ============================================================
-   Auth Pages - Enhanced Styling
-   Login & Register specific styles
-   ============================================================ */
-
-/* Auth page container */
 .auth-wrapper {
     min-height: 100vh;
     display: flex;
@@ -654,8 +614,6 @@ body {
     position: relative;
     overflow: hidden;
 }
-
-    /* Decorative background elements */
     .auth-wrapper::before,
     .auth-wrapper::after {
         content: '';
@@ -681,7 +639,6 @@ body {
         left: -150px;
     }
 
-/* Auth card */
 .auth-card {
     position: relative;
     z-index: 1;
@@ -699,7 +656,6 @@ body {
         transform: translateY(-4px);
     }
 
-    /* Card header accent */
     .auth-card::before {
         content: '';
         position: absolute;
@@ -714,7 +670,6 @@ body {
         padding: 2.5rem;
     }
 
-    /* Auth headings */
     .auth-card h2 {
         font-size: 2rem;
         font-weight: 700;
@@ -731,7 +686,6 @@ body {
         margin-bottom: 2rem;
     }
 
-    /* Input fields enhancement */
     .auth-card .form-control {
         padding: 0.75rem 1rem;
         font-size: 1rem;
@@ -751,7 +705,6 @@ body {
             box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
         }
 
-    /* Floating labels effect */
     .auth-card .form-label {
         font-size: 0.875rem;
         font-weight: 600;
@@ -760,7 +713,6 @@ body {
         transition: all 0.2s ease;
     }
 
-    /* Submit button */
     .auth-card .btn-primary {
         padding: 0.75rem 1.5rem;
         font-size: 1rem;
@@ -802,7 +754,6 @@ body {
             transform: translateY(0);
         }
 
-    /* Links in auth pages */
     .auth-card a {
         color: var(--qp-brand);
         font-weight: 600;
@@ -830,7 +781,6 @@ body {
                 width: 100%;
             }
 
-    /* Validation messages */
     .auth-card .text-danger {
         font-size: 0.875rem;
         margin-top: 0.25rem;
@@ -850,7 +800,6 @@ body {
             padding-left: 1.25rem;
         }
 
-    /* Remember me checkbox */
     .auth-card .form-check {
         margin-bottom: 1.5rem;
     }
@@ -872,7 +821,6 @@ body {
         font-weight: 500;
     }
 
-/* Divider */
 .auth-divider {
     display: flex;
     align-items: center;
@@ -897,7 +845,6 @@ body {
         margin-left: 1rem;
     }
 
-/* Social login buttons */
 .social-login {
     display: inline-flex;
     gap: 1rem;
@@ -914,7 +861,6 @@ body {
         font-weight: 500;
     }
 
-/* Responsive adjustments */
 @media (max-width: 576px) {
     .auth-card .card-body {
         padding: 1.5rem;
@@ -929,7 +875,6 @@ body {
     }
 }
 
-/* Animation for card entrance */
 @keyframes authCardIn {
     from {
         opacity: 0;
@@ -946,7 +891,6 @@ body {
     animation: authCardIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Password visibility toggle */
 .password-toggle {
     position: relative;
 }
@@ -972,7 +916,6 @@ body {
             color: var(--qp-ink);
         }
 
-/* Error state for inputs */
 .form-control.input-validation-error {
     border-color: var(--qp-danger);
     background-color: #fef2f2;
@@ -983,7 +926,6 @@ body {
         border-color: var(--qp-danger);
     }
 
-/* Success state for inputs */
 .form-control.valid {
     border-color: var(--qp-success);
 }
@@ -993,7 +935,6 @@ body {
         border-color: var(--qp-success);
     }
 
-/* -------------------- Auth Logo -------------------- */
 
 .auth-logo {
     display: inline-flex;
@@ -1017,7 +958,6 @@ body {
     box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
 }
 
-/* Input group enhancement */
 .input-group .input-group-text {
     background: linear-gradient(135deg, #eef2ff 0%, #fafbfc 100%);
     border: 1.5px solid var(--qp-line);
@@ -1038,7 +978,6 @@ body {
     color: var(--qp-brand-dark);
 }
 
-/* Social buttons */
 .social-login .btn {
     background-color: #ffffff;
     border: 1.5px solid var(--qp-line);
@@ -1052,12 +991,10 @@ body {
         transform: translateY(-1px);
     }
 
-/* Small text */
 .small {
     font-size: 0.875rem;
 }
 
-/* -------------------- Auth Body -------------------- */
 
 .auth-body {
     background: linear-gradient(135deg, #f8f9fc 0%, #eef2ff 50%, #fef3c7 100%);
@@ -1071,7 +1008,6 @@ body {
         width: 100%;
     }
 
-/* -------------------- Brand Icon -------------------- */
 
 .brand-icon {
     display: inline-block;
@@ -1084,7 +1020,6 @@ body {
     margin-right: 4px;
 }
 
-/* -------------------- Navigation Icons -------------------- */
 
 .navbar .nav-link svg {
     opacity: 0.8;
@@ -1095,14 +1030,12 @@ body {
     opacity: 1;
 }
 
-/* Notification badge */
 .navbar .badge {
     font-size: 0.7rem;
     padding: 0.25em 0.5em;
     margin-left: 0.5rem;
 }
 
-/* Logout button style */
 .navbar .btn-outline-danger {
     border: 1.5px solid rgba(255, 255, 255, 0.3);
     color: #ffffff !important;
@@ -1118,7 +1051,6 @@ body {
         box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
     }
 
-/* Responsive nav adjustments */
 @media (max-width: 992px) {
     .navbar .navbar-nav {
         margin-top: 1rem;
@@ -1134,7 +1066,6 @@ body {
     }
 }
 
-/* -------------------- OTP Input -------------------- */
 
 .otp-input {
     font-family: var(--qp-font-mono);
@@ -1181,7 +1112,6 @@ body {
         padding-right: 2.5rem;
     }
 
-/* -------------------- New Hero Section -------------------- */
 
 .qp-hero-new {
     background: linear-gradient(135deg, #f8f9fc 0%, #eef2ff 50%, #fef3c7 100%);
@@ -1244,7 +1174,6 @@ body {
     max-width: 500px;
 }
 
-/* Stats */
 .qp-stats {
     display: flex;
     gap: 2rem;
@@ -1266,7 +1195,6 @@ body {
     color: var(--qp-muted);
 }
 
-/* Hero Visual */
 .qp-hero-visual {
     position: relative;
     display: flex;
@@ -1418,7 +1346,6 @@ body {
     font-size: 0.875rem;
 }
 
-/* Floating Cards */
 .qp-float-card {
     position: absolute;
     background: white;
@@ -1469,7 +1396,6 @@ body {
         color: var(--qp-muted);
     }
 
-/* Features Section */
 .qp-features {
     background: white;
 }
@@ -1524,7 +1450,6 @@ body {
     color: var(--qp-ink);
 }
 
-/* CTA Section */
 .qp-cta {
     background: linear-gradient(135deg, #f8f9fc 0%, #eef2ff 100%);
 }
@@ -1559,7 +1484,6 @@ body {
         color: var(--qp-brand-dark);
     }
 
-/* Animations */
 @keyframes float {
     0%, 100% {
         transform: translateY(0);
@@ -1580,7 +1504,6 @@ body {
     }
 }
 
-/* Responsive */
 @media (max-width: 992px) {
     .qp-hero-visual {
         margin-top: 3rem;
@@ -1610,7 +1533,6 @@ body {
     }
 }
 
-/* -------------------- Dashboard -------------------- */
 
 .qp-dashboard-title {
     font-size: 1.75rem;
@@ -1619,7 +1541,6 @@ body {
     letter-spacing: -0.01em;
 }
 
-/* Stat Cards */
 .qp-stat-card {
     border: 1px solid var(--qp-line);
     border-radius: var(--qp-radius);
@@ -1689,7 +1610,6 @@ body {
     font-weight: 500;
 }
 
-/* Card Headers */
 .card-header {
     background: linear-gradient(180deg, #f8f9fc 0%, #ffffff 100%);
     border-bottom: 1px solid var(--qp-line);
@@ -1700,7 +1620,6 @@ body {
         color: var(--qp-ink);
     }
 
-/* List Group Items */
 .list-group-item {
     transition: all 0.2s ease;
     border-left: 3px solid transparent;
@@ -1712,20 +1631,17 @@ body {
         padding-left: 1.25rem;
     }
 
-/* Badge colors for light backgrounds */
 .badge.bg-light {
     background-color: #f1f4f9 !important;
     color: var(--qp-ink-soft);
     font-weight: 600;
 }
 
-/* Table improvements */
 .table td .badge {
     font-size: 0.75rem;
     padding: 0.35em 0.65em;
 }
 
-/* Amount colors */
 .amount {
     font-weight: 700;
 }
@@ -1738,7 +1654,6 @@ body {
     color: var(--qp-danger) !important;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .qp-stat-value {
         font-size: 1.25rem;
@@ -1754,9 +1669,7 @@ body {
     }
 }
 
-/* -------------------- Linked Accounts -------------------- */
 
-/* Bank icon */
 .qp-bank-icon {
     width: 40px;
     height: 40px;
@@ -1769,14 +1682,12 @@ body {
     flex-shrink: 0;
 }
 
-/* Masked number */
 .qp-masked-number {
     font-family: var(--qp-font-mono);
     letter-spacing: 0.05em;
     font-size: 0.875rem;
 }
 
-/* Empty state */
 .qp-empty-icon {
     width: 80px;
     height: 80px;
@@ -1789,13 +1700,11 @@ body {
     margin: 0 auto;
 }
 
-/* Link card */
 .qp-link-card {
     background: linear-gradient(135deg, #ffffff 0%, #f8f9fc 100%);
     border: 1px solid var(--qp-line);
 }
 
-/* Secure badge */
 .qp-secure-badge {
     display: inline-flex;
     align-items: center;
@@ -1807,7 +1716,6 @@ body {
     border-radius: 50px;
 }
 
-/* Info box */
 .qp-info-box {
     display: flex;
     align-items: flex-start;
@@ -1819,7 +1727,6 @@ body {
     line-height: 1.5;
 }
 
-/* List group item hover effect */
 .list-group-item {
     transition: all 0.2s ease;
 }
@@ -1828,7 +1735,6 @@ body {
         background-color: #f8f9fc;
     }
 
-/* Remove button hover */
 .btn-outline-danger:hover {
     background-color: var(--qp-danger);
     border-color: var(--qp-danger);
@@ -1837,7 +1743,6 @@ body {
     transform: translateY(-1px);
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .qp-bank-icon {
         width: 32px;
@@ -1849,7 +1754,6 @@ body {
     }
 }
 
-/* -------------------- Auth Horizontal Layout -------------------- */
 
 .auth-card {
     border-radius: 24px;
@@ -1943,7 +1847,6 @@ body {
         color: var(--qp-ink);
     }
 
-/* Adjust auth logo in visual side */
 .auth-visual-side .auth-logo {
     width: 56px;
     height: 56px;
@@ -1957,7 +1860,6 @@ body {
     height: 20px;
 }
 
-/* Responsive adjustments */
 @media (max-width: 992px) {
     .auth-form-side {
         padding: 2rem !important;
@@ -1978,9 +1880,7 @@ body {
     }
 }
 
-/* -------------------- Wallets Page -------------------- */
 
-/* Wallet icon */
 .qp-wallet-icon {
     width: 40px;
     height: 40px;
@@ -1993,7 +1893,6 @@ body {
     flex-shrink: 0;
 }
 
-/* Wallet balance */
 .qp-wallet-balance {
     text-align: right;
 }
@@ -2003,13 +1902,11 @@ body {
         color: var(--qp-ink);
     }
 
-/* Create wallet card */
 .qp-create-wallet-card {
     background: linear-gradient(135deg, #ffffff 0%, #f8f9fc 100%);
     border: 1px solid var(--qp-line);
 }
 
-/* Wallet list item enhancements */
 .list-group-item .form-control-sm {
     border-radius: var(--qp-radius-sm);
     font-size: 0.875rem;
@@ -2019,14 +1916,12 @@ body {
     white-space: nowrap;
 }
 
-/* Hover effect for wallet items */
 .list-group-item:hover .qp-wallet-icon {
     background: var(--qp-brand);
     color: white;
     transition: all 0.3s ease;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .qp-wallet-balance {
         text-align: left;
@@ -2043,9 +1938,7 @@ body {
     }
 }
 
-/* -------------------- Transfer Page -------------------- */
 
-/* Transfer card */
 .qp-transfer-card {
     border: 1px solid var(--qp-line);
     border-radius: var(--qp-radius);
@@ -2053,7 +1946,6 @@ body {
     box-shadow: var(--qp-shadow-sm);
 }
 
-/* Transfer arrow */
 .qp-transfer-arrow {
     display: flex;
     justify-content: center;
@@ -2062,14 +1954,12 @@ body {
     opacity: 0.6;
 }
 
-/* Amount input */
 .qp-amount-input {
     font-family: var(--qp-font-mono);
     font-size: 1.25rem;
     font-weight: 600;
 }
 
-/* Recipient search results */
 #recipientResults {
     position: relative;
     z-index: 10;
@@ -2099,14 +1989,12 @@ body {
             border-bottom-right-radius: var(--qp-radius-sm) !important;
         }
 
-/* Tips card */
 .qp-tips-card {
     background: var(--qp-accent-tint);
     border: 1px solid #fde68a;
     border-radius: var(--qp-radius-sm);
 }
 
-/* Form select enhancement */
 .form-select {
     cursor: pointer;
 }
@@ -2116,7 +2004,6 @@ body {
         box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
     }
 
-/* Input group enhancements */
 .input-group-lg .form-control {
     font-size: 1.25rem;
 }
@@ -2125,7 +2012,6 @@ body {
     font-size: 1rem;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .qp-transfer-arrow {
         margin: 0.5rem 0;
@@ -2136,16 +2022,13 @@ body {
     }
 }
 
-/* -------------------- Transaction History -------------------- */
 
-/* Transaction table enhancements */
 .table td .badge {
     font-size: 0.75rem;
     padding: 0.35em 0.65em;
     font-weight: 600;
 }
 
-/* Transaction type badge */
 .badge.bg-light {
     background-color: #f1f4f9 !important;
     color: var(--qp-ink-soft);
@@ -2153,12 +2036,10 @@ body {
     border: 1px solid var(--qp-line);
 }
 
-/* Direction badges with icons */
 .badge svg {
     vertical-align: middle;
 }
 
-/* Amount styling */
 .amount {
     font-family: var(--qp-font-mono);
     font-variant-numeric: tabular-nums;
@@ -2174,7 +2055,6 @@ body {
     color: var(--qp-danger) !important;
 }
 
-/* Status badges */
 .badge.bg-warning {
     background-color: var(--qp-accent-tint) !important;
     color: #92400e;
@@ -2186,7 +2066,6 @@ body {
     color: #4b5563;
 }
 
-/* Date formatting */
 .table td .fw-semibold {
     color: var(--qp-ink);
     font-size: 0.925rem;
@@ -2196,13 +2075,11 @@ body {
     font-size: 0.75rem;
 }
 
-/* Pagination */
 .pagination-info {
     font-family: var(--qp-font-mono);
     font-size: 0.875rem;
 }
 
-/* Hover effect on table rows */
 .table tbody tr {
     transition: all 0.2s ease;
 }
@@ -2216,7 +2093,6 @@ body {
             background-color: transparent;
         }
 
-/* Empty state icon */
 .qp-empty-icon {
     width: 80px;
     height: 80px;
@@ -2229,7 +2105,6 @@ body {
     margin: 0 auto;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .table thead {
         display: none;
@@ -2257,9 +2132,7 @@ body {
             color: var(--qp-muted);
         }
 }
-/* -------------------- Smart Split -------------------- */
 
-/* Split card */
 .qp-split-card {
     transition: all 0.3s ease;
     border: 1px solid var(--qp-line);
@@ -2271,7 +2144,6 @@ body {
         border-color: var(--qp-brand);
     }
 
-/* Progress bar */
 .qp-progress {
     height: 8px;
     background: #f1f4f9;
@@ -2286,19 +2158,16 @@ body {
     transition: width 0.3s ease;
 }
 
-/* Split summary card */
 .qp-split-summary {
     background: linear-gradient(135deg, #ffffff 0%, #f8f9fc 100%);
     border: 1px solid var(--qp-line);
 }
 
-/* My share card */
 .qp-my-share {
     border: 2px solid var(--qp-brand);
     background: var(--qp-brand-tint);
 }
 
-/* Participant avatar */
 .qp-participant-avatar {
     width: 32px;
     height: 32px;
@@ -2313,7 +2182,6 @@ body {
     flex-shrink: 0;
 }
 
-/* Form enhancements */
 .form-text {
     font-size: 0.8rem;
     color: var(--qp-muted);
@@ -2328,14 +2196,12 @@ body {
         font-size: 0.75rem;
     }
 
-/* Textarea enhancement */
 textarea.form-control {
     font-family: var(--qp-font-mono);
     font-size: 0.875rem;
     line-height: 1.6;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .qp-split-card .card-body {
         padding: 1.25rem;
@@ -2346,9 +2212,7 @@ textarea.form-control {
     }
 }
 
-/* -------------------- Shared Wallets -------------------- */
 
-/* Shared wallet card */
 .qp-shared-wallet-card {
     transition: all 0.3s ease;
     border: 1px solid var(--qp-line);
@@ -2360,18 +2224,15 @@ textarea.form-control {
         border-color: var(--qp-brand);
     }
 
-/* Wallet summary */
 .qp-wallet-summary {
     background: linear-gradient(135deg, #ffffff 0%, #f8f9fc 100%);
     border: 1px solid var(--qp-line);
 }
 
-/* Admin badge */
 .badge.bg-primary {
     background-color: var(--qp-brand) !important;
 }
 
-/* Member avatar */
 .qp-participant-avatar {
     width: 32px;
     height: 32px;
@@ -2386,7 +2247,6 @@ textarea.form-control {
     flex-shrink: 0;
 }
 
-/* Info box */
 .qp-info-box {
     display: flex;
     align-items: flex-start;
@@ -2404,7 +2264,6 @@ textarea.form-control {
         text-decoration: underline;
     }
 
-/* Responsive */
 @media (max-width: 768px) {
     .qp-shared-wallet-card .card-body {
         padding: 1.25rem;
@@ -2415,9 +2274,7 @@ textarea.form-control {
     }
 }
 
-/* -------------------- Notifications -------------------- */
 
-/* Notification icon */
 .qp-notification-icon {
     width: 40px;
     height: 40px;
@@ -2438,7 +2295,6 @@ textarea.form-control {
     color: #9ca3af;
 }
 
-/* Unread dot */
 .qp-unread-dot {
     width: 8px;
     height: 8px;
@@ -2447,7 +2303,6 @@ textarea.form-control {
     animation: pulse 2s infinite;
 }
 
-/* Unread notification background */
 .list-group-item-primary {
     background-color: #f8f9fc;
     border-left: 3px solid var(--qp-brand);
@@ -2457,14 +2312,12 @@ textarea.form-control {
         background-color: #f1f4f9;
     }
 
-/* Mark as read button */
 .list-group-item .btn-outline-secondary {
     white-space: nowrap;
     font-size: 0.8rem;
     padding: 0.3rem 0.6rem;
 }
 
-/* Hover effect */
 .list-group-item {
     transition: all 0.2s ease;
 }
@@ -2473,7 +2326,6 @@ textarea.form-control {
         background-color: #f8f9fc;
     }
 
-/* Responsive */
 @media (max-width: 768px) {
     .qp-notification-icon {
         width: 32px;

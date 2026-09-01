@@ -1,0 +1,30 @@
+
+:root {
+    --qp-sidebar-w: 264px;
+    --qp-sidebar-w-collapsed: 76px;
+    --qp-topbar-h: 68px;
+
+    --qp-glass-bg: rgba(255, 255, 255, 0.72);
+    --qp-glass-border: rgba(226, 232, 240, 0.8);
+    --qp-glass-blur: 16px;
+
+    --qp-sidebar-bg: #14142b;
+    --qp-sidebar-bg-soft: #1c1c3a;
+    --qp-sidebar-line: rgba(255, 255, 255, 0.08);
+    --qp-sidebar-text: rgba(255, 255, 255, 0.72);
+    --qp-sidebar-text-active: #ffffff;
+
+    --qp-ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --qp-t-fast: 150ms;
+    --qp-t-base: 220ms;
+    --qp-t-slow: 380ms;
+
+    --qp-shadow-glass: 0 8px 32px rgba(20, 20, 43, 0.12);
+}
+
+.qp-glass {
+    background: var(--qp-glass-bg);
+    backdrop-filter: blur(var(--qp-glass-blur));
+    -webkit-backdrop-filter: blur(var(--qp-glass-blur));
+    border: 1px solid var(--qp-glass-border);
+}
