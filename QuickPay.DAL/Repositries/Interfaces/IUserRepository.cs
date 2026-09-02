@@ -32,7 +32,6 @@ namespace QuickPay.DAL.Repositries.Interfaces
             User user,
             CancellationToken cancellationToken = default);
         
-        // External Login methods
         Task<User?> GetByExternalLoginAsync(
             string provider,
             string providerKey,

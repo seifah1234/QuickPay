@@ -22,7 +22,7 @@ body.qp-app {
     display: flex;
     align-items: center;
     gap: .6rem;
-    padding: 1.25rem 1.25rem;
+    padding: 1.25rem 0.7rem;
     color: #fff;
     font-family: var(--qp-font-display);
     font-weight: 700;
@@ -93,7 +93,9 @@ body.qp-app {
 
 body.qp-sidebar-collapsed .qp-sidebar {
     width: var(--qp-sidebar-w-collapsed);
+    overflow-x: hidden;
 }
+
 
 body.qp-sidebar-collapsed .qp-sidebar-brand span.qp-sidebar-brand-text,
 body.qp-sidebar-collapsed .qp-sidebar-link span,

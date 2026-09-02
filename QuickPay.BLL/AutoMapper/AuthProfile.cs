@@ -13,6 +13,10 @@ namespace QuickPay.BLL.AutoMapper
             CreateMap<LoginViewModel, LoginRequestDto>();
 
             CreateMap<VerifyOtpViewModel, VerifyOtpRequestDto>();
+
+            CreateMap<ForgotPasswordViewModel, ForgotPasswordRequestDto>();
+
+            CreateMap<ResetPasswordViewModel, ResetPasswordRequestDto>();
         }
     }
 }

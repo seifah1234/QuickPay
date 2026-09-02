@@ -67,8 +67,7 @@
         <div class="qp-sidebar-backdrop" data-qp-sidebar-backdrop></div>
         <aside class="qp-sidebar">
             <a class="qp-sidebar-brand" asp-area="" asp-controller="Home" asp-action="Index">
-                <span class="qp-sidebar-brand-icon"></span>
-                <span class="qp-sidebar-brand-text">QuickPay</span>
+                <img src="~/img/logo.png" style="width:200px;" class="sidebar-logo"/>
             </a>
             <ul class="qp-sidebar-nav">
                 <li>
@@ -160,7 +159,7 @@
             <div class="qp-sidebar-footer dropdown">
                 <a class="d-flex align-items-center gap-2 text-decoration-none dropdown-toggle" href="#" id="userMenuDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="color: var(--qp-sidebar-text-active);">
                     <img class="qp-avatar" src="@currentUserImage" alt="@((currentUserName ?? "?").Substring(0, 1).ToUpper())" />
-                    <span class="qp-sidebar-brand-text small">@(currentUserName ?? "Account")</span>
+                    <span class="qp-sidebar-brand-text small ms-3">@(currentUserName ?? "Account")</span>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenuDropdown">
                     <li><h6 class="dropdown-header">Signed in as @currentUserName</h6></li>

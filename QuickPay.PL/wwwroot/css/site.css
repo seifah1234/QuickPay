@@ -104,6 +104,7 @@ a {
 
 
 .navbar {
+    z-index: 100;
     background: linear-gradient(135deg, #312e81 0%, #4f46e5 50%, #6366f1 100%) !important;
     box-shadow: 0 4px 16px rgba(49, 46, 129, 0.25);
     padding-top: .7rem;
@@ -2339,5 +2340,46 @@ textarea.form-control {
     .list-group-item .btn-outline-secondary {
         width: 100%;
         margin-top: 0.5rem;
+    }
+}
+
+.auth-logo-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.auth-logo-container {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+    .auth-logo-container:hover {
+        transform: scale(1.05);
+        border-color: rgba(255, 255, 255, 0.3);
+        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+    }
+
+.auth-logo-img {
+    width: 240px;
+    height: auto;
+    display: block;
+    filter: brightness(0) invert(1);
+    transition: filter 0.3s ease;
+}
+
+.auth-logo-container:hover .auth-logo-img {
+    filter: brightness(0) invert(1) drop-shadow(0 0 20px rgba(255, 255, 255, 0.2));
+}
+
+/* للشاشات الصغيرة */
+@media (max-width: 992px) {
+    .auth-logo-img {
+        width: 100px;
     }
 }

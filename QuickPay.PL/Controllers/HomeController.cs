@@ -20,7 +20,15 @@ namespace QuickPay.PL.Controllers
             _transactionService = transactionService;
         }
 
-        public async Task<IActionResult> Index(CancellationToken cancellationToken = default)
+
+        public async Task<IActionResult> Index(
+            string? payment_id = null,
+            string? status = null,
+            string? transaction_id = null,
+            string? order_id = null,
+            string? merchant_order_id = null,
+            string? error_code = null,
+            string? error_message = null, CancellationToken cancellationToken = default)
         {
             var userId = GetCurrentUserId();
 

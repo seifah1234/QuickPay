@@ -142,6 +142,64 @@ namespace QuickPay.PL.Controllers
         }
 
         [HttpGet]
+        public IActionResult ForgotPassword()
+        {
+            return View(new ForgotPasswordViewModel());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(
+            ForgotPasswordViewModel model,
+            CancellationToken cancellationToken)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var request = _mapper.Map<ForgotPasswordRequestDto>(model);
+
+            var result = await _authService.ForgotPasswordAsync(request, cancellationToken);
+
+            TempData["InfoMessage"] = result.Message;
+
+            return RedirectToAction(nameof(ResetPassword), new { email = model.Email });
+        }
+
+        [HttpGet]
+        public IActionResult ResetPassword(string? email)
+        {
+            return View(new ResetPasswordViewModel { Email = email ?? string.Empty });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(
+            ResetPasswordViewModel model,
+            CancellationToken cancellationToken)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var request = _mapper.Map<ResetPasswordRequestDto>(model);
+
+            var result = await _authService.ResetPasswordAsync(request, cancellationToken);
+
+            if (!result.IsSuccess)
+            {
+                ModelState.AddModelError(string.Empty, result.Message);
+                return View(model);
+            }
+
+            TempData["SuccessMessage"] = result.Message;
+
+            return RedirectToAction(nameof(Login));
+        }
+
+        [HttpGet]
         public IActionResult Login()
         {
             return View(new LoginViewModel());
@@ -213,6 +271,7 @@ namespace QuickPay.PL.Controllers
                 await _authService.LogoutAsync(
                     refreshToken, cancellationToken);
             }
+            TempData["SuccessMessage"] = "Successfully logged out!";
 
             ClearAuthCookies();
 
@@ -229,25 +288,27 @@ namespace QuickPay.PL.Controllers
 
         [HttpGet]
         public async Task<IActionResult> GoogleCallback(
-            string? returnUrl = null,
-            CancellationToken cancellationToken = default)
+    string? returnUrl = null,
+    CancellationToken cancellationToken = default)
         {
-            // Authenticate against temporary external cookie scheme
             var authenticateResult = await HttpContext.AuthenticateAsync("ExternalCookie");
             if (!authenticateResult.Succeeded || authenticateResult.Principal is null)
             {
                 TempData["ErrorMessage"] = "External authentication failed.";
                 return RedirectToAction(nameof(Login));
             }
+
             var principal = authenticateResult.Principal;
             var providerKey = principal.FindFirstValue(ClaimTypes.NameIdentifier);
             var email = principal.FindFirstValue(ClaimTypes.Email);
             var fullName = principal.FindFirstValue(ClaimTypes.Name);
+
             if (string.IsNullOrEmpty(providerKey) || string.IsNullOrEmpty(email))
             {
                 TempData["ErrorMessage"] = "Error reading information from Google.";
                 return RedirectToAction(nameof(Login));
             }
+
             var request = new ExternalLoginRequestDto
             {
                 Provider = GoogleDefaults.AuthenticationScheme,
@@ -255,20 +316,26 @@ namespace QuickPay.PL.Controllers
                 Email = email,
                 Name = fullName
             };
+
             var result = await _authService.ExternalLoginAsync(request, cancellationToken);
-            // Clean up temporary external cookie
+
             await HttpContext.SignOutAsync("ExternalCookie");
+
             if (!result.IsSuccess)
             {
                 TempData["ErrorMessage"] = result.Message;
                 return RedirectToAction(nameof(Login));
             }
-            // Set custom access_token and refresh_token cookies
+
             SetAuthCookies(result);
+
+            TempData["SuccessMessage"] = "Successfully logged in with Google!";
+
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
                 return Redirect(returnUrl);
             }
+
             return RedirectToPostLoginDestination(result);
         }
 
@@ -282,27 +349,25 @@ namespace QuickPay.PL.Controllers
 
         private void SetAuthCookies(AuthResultDto result)
         {
-            Response.Cookies.Append(
-                AccessTokenCookie,
-                result.AccessToken,
-                new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict,
-                    Expires = result.AccessTokenExpiresAt
-                });
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Lax,
+                Expires = result.AccessTokenExpiresAt
+            };
 
-            Response.Cookies.Append(
-                RefreshTokenCookie,
-                result.RefreshToken,
-                new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict,
-                    Expires = result.RefreshTokenExpiresAt
-                });
+            Response.Cookies.Append(AccessTokenCookie, result.AccessToken, cookieOptions);
+
+            var refreshCookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Lax,
+                Expires = result.RefreshTokenExpiresAt
+            };
+
+            Response.Cookies.Append(RefreshTokenCookie, result.RefreshToken, refreshCookieOptions);
         }
 
         private void ClearAuthCookies()

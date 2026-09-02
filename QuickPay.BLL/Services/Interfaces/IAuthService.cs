@@ -31,5 +31,13 @@ namespace QuickPay.BLL.Services.Interfaces
             int userId,
             string phoneNumber,
             CancellationToken cancellationToken = default);
+
+        Task<AuthResultDto> ForgotPasswordAsync(
+            ForgotPasswordRequestDto request,
+            CancellationToken cancellationToken = default);
+
+        Task<AuthResultDto> ResetPasswordAsync(
+            ResetPasswordRequestDto request,
+            CancellationToken cancellationToken = default);
     }
 }

@@ -63,6 +63,9 @@ builder.Services.Configure<JwtSettings>(
 builder.Services.Configure<PaymobSettings>(
     builder.Configuration.GetSection("Paymob"));
 
+builder.Services.Configure<TwilioSettings>(
+    builder.Configuration.GetSection("Twilio"));
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IOtpCodeRepository, OtpCodeRepository>();
@@ -85,7 +88,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IPasswordHasherService, PasswordHasherService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 
-builder.Services.AddScoped<IOtpDeliveryService, LogOtpDeliveryService>();
+builder.Services.AddScoped<IOtpDeliveryService, TwilioOtpDeliveryService>();
 builder.Services.AddScoped<IOtpService, OtpService>();
 
 builder.Services.AddScoped<IAuthService, AuthService>();

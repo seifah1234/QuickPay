@@ -139,8 +139,6 @@ namespace QuickPay.BLL.Services.Implementation
             var user = await _unitOfWork.Users.GetByEmailAsync(
                 request.Email, cancellationToken);
 
-            // Same generic message whether the email doesn't exist or the
-            // password is wrong - don't reveal which one it was.
             if (user is null ||
                 !_passwordHasher.Verify(user.PasswordHash, request.Password))
             {
@@ -258,7 +256,6 @@ namespace QuickPay.BLL.Services.Implementation
             if (string.IsNullOrWhiteSpace(request.ProviderKey))
                 throw new ArgumentException("ProviderKey is required.", nameof(request));
  
-            // 1. Already linked -> just return the existing user, no writes needed.
             var linkedUser = await _unitOfWork.Users.GetByExternalLoginAsync(
                 request.Provider, request.ProviderKey, cancellationToken);
  
@@ -273,7 +270,6 @@ namespace QuickPay.BLL.Services.Implementation
                 return await IssueTokensAsync(linkedUser, cancellationToken);
             }
  
-            // 2. Not linked yet, but an account with this email already exists -> link it.
             if (!string.IsNullOrWhiteSpace(request.Email))
             {
                 var userByEmail = await _unitOfWork.Users.GetByEmailAsync(
@@ -295,8 +291,6 @@ namespace QuickPay.BLL.Services.Implementation
                 }
             }
  
-            // 3. No match at all -> brand new user, created together with the external login
-            //    in a single SaveChangesAsync so both rows commit atomically.
             var userName = await GenerateUniqueUserNameAsync(request, cancellationToken);
  
             var newUser = new User
@@ -329,7 +323,6 @@ namespace QuickPay.BLL.Services.Implementation
                     candidate = $"{baseName}{Random.Shared.Next(1000, 9999)}";
                 }
  
-                // Extremely unlikely fallback: guarantees uniqueness without another DB round-trip.
                 return $"{baseName}{Guid.NewGuid():N}"[..Math.Min(baseName.Length + 8, 32)];
             }
  
@@ -375,6 +368,85 @@ namespace QuickPay.BLL.Services.Implementation
             {
                 IsSuccess = true,
                 Message = "Phone number updated. We sent a verification code to your phone."
+            };
+        }
+
+        public async Task<AuthResultDto> ForgotPasswordAsync(
+            ForgotPasswordRequestDto request,
+            CancellationToken cancellationToken = default)
+        {
+            const string genericMessage =
+                "If an account with that email exists and has a phone number on file, " +
+                "we've sent a verification code to it.";
+
+            var user = await _unitOfWork.Users.GetByEmailAsync(
+                request.Email, cancellationToken);
+
+            if (user is not null && user.IsActive && !string.IsNullOrWhiteSpace(user.PhoneNumber))
+            {
+                await _otpService.GenerateAndSendAsync(
+                    user.Id,
+                    user.PhoneNumber,
+                    OtpPurpose.PasswordReset,
+                    cancellationToken);
+
+                await _auditLogService.LogAsync(
+                    user.Id,
+                    "ForgotPasswordRequested",
+                    "User",
+                    user.Id,
+                    "A password reset code was requested.",
+                    cancellationToken);
+            }
+
+            return new AuthResultDto
+            {
+                IsSuccess = true,
+                Message = genericMessage
+            };
+        }
+
+        public async Task<AuthResultDto> ResetPasswordAsync(
+            ResetPasswordRequestDto request,
+            CancellationToken cancellationToken = default)
+        {
+            var user = await _unitOfWork.Users.GetByEmailAsync(
+                request.Email, cancellationToken);
+
+            const string genericFailure =
+                "That code is invalid or expired. Please request a new one.";
+
+            if (user is null)
+            {
+                return FailedAuthResult(genericFailure);
+            }
+
+            var isValid = await _otpService.VerifyAsync(
+                user.Id,
+                request.Code,
+                OtpPurpose.PasswordReset,
+                cancellationToken);
+
+            if (!isValid)
+            {
+                return FailedAuthResult(genericFailure);
+            }
+
+            user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            await _auditLogService.LogAsync(
+                user.Id,
+                "PasswordReset",
+                "User",
+                user.Id,
+                "Password was reset via the forgot-password flow.",
+                cancellationToken);
+
+            return new AuthResultDto
+            {
+                IsSuccess = true,
+                Message = "Your password has been reset. You can now log in."
             };
         }
     }
