@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Options;
 using QuickPay.BLL.DTOs.Auth;
 using QuickPay.BLL.Services.Interfaces;
 using QuickPay.BLL.Settings;
@@ -14,19 +14,23 @@ namespace QuickPay.BLL.Services.Implementation
         private readonly IPasswordHasherService _passwordHasher;
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IOtpService _otpService;
+        private readonly IAuditLogService _auditLogService;
         private readonly JwtSettings _jwtSettings;
+        private readonly int MaxUserNameAttempts = 5;
 
         public AuthService(
             IUnitOfWork unitOfWork,
             IPasswordHasherService passwordHasher,
             IJwtTokenService jwtTokenService,
             IOtpService otpService,
+            IAuditLogService auditLogService,
             IOptions<JwtSettings> jwtOptions)
         {
             _unitOfWork = unitOfWork;
             _passwordHasher = passwordHasher;
             _jwtTokenService = jwtTokenService;
             _otpService = otpService;
+            _auditLogService = auditLogService;
             _jwtSettings = jwtOptions.Value;
         }
 
@@ -52,6 +56,11 @@ namespace QuickPay.BLL.Services.Implementation
                 return Fail("An account with this phone number already exists.");
             }
 
+            if (string.IsNullOrEmpty(request.Password))
+            {
+                return Fail("Password is required.");
+            }
+
             var user = new User
             {
                 UserName = request.UserName,
@@ -64,6 +73,14 @@ namespace QuickPay.BLL.Services.Implementation
 
             await _unitOfWork.Users.AddAsync(user, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            await _auditLogService.LogAsync(
+                user.Id,
+                "Register",
+                "User",
+                user.Id,
+                $"New account registered ({user.Email}).",
+                cancellationToken);
 
             await _otpService.GenerateAndSendAsync(
                 user.Id,
@@ -122,8 +139,6 @@ namespace QuickPay.BLL.Services.Implementation
             var user = await _unitOfWork.Users.GetByEmailAsync(
                 request.Email, cancellationToken);
 
-            // Same generic message whether the email doesn't exist or the
-            // password is wrong - don't reveal which one it was.
             if (user is null ||
                 !_passwordHasher.Verify(user.PasswordHash, request.Password))
             {
@@ -135,6 +150,20 @@ namespace QuickPay.BLL.Services.Implementation
                 return FailedAuthResult(
                     "Please verify your phone number before logging in.");
             }
+
+            if (!user.IsActive)
+            {
+                return FailedAuthResult(
+                    "This account has been blocked by an admin. Please contact support.");
+            }
+
+            await _auditLogService.LogAsync(
+                user.Id,
+                "Login",
+                "User",
+                user.Id,
+                $"User logged in ({user.Email}).",
+                cancellationToken);
 
             return await IssueTokensAsync(user, cancellationToken);
         }
@@ -205,7 +234,8 @@ namespace QuickPay.BLL.Services.Implementation
                 AccessToken = accessToken,
                 AccessTokenExpiresAt = accessTokenExpiresAt,
                 RefreshToken = refreshTokenValue,
-                RefreshTokenExpiresAt = refreshTokenExpiresAt
+                RefreshTokenExpiresAt = refreshTokenExpiresAt,
+                IsAdmin = user.IsAdmin
             };
         }
 
@@ -214,5 +244,211 @@ namespace QuickPay.BLL.Services.Implementation
             IsSuccess = false,
             Message = message
         };
+
+        public async Task<AuthResultDto> ExternalLoginAsync(
+            ExternalLoginRequestDto? request,
+            CancellationToken cancellationToken = default)
+        {
+            if (request is null)
+                throw new ArgumentNullException(nameof(request));
+            if (string.IsNullOrWhiteSpace(request.Provider))
+                throw new ArgumentException("Provider is required.", nameof(request));
+            if (string.IsNullOrWhiteSpace(request.ProviderKey))
+                throw new ArgumentException("ProviderKey is required.", nameof(request));
+ 
+            var linkedUser = await _unitOfWork.Users.GetByExternalLoginAsync(
+                request.Provider, request.ProviderKey, cancellationToken);
+ 
+            if (linkedUser is not null)
+            {
+                if (!linkedUser.IsActive)
+                {
+                    return FailedAuthResult(
+                        "This account has been blocked by an admin. Please contact support.");
+                }
+
+                return await IssueTokensAsync(linkedUser, cancellationToken);
+            }
+ 
+            if (!string.IsNullOrWhiteSpace(request.Email))
+            {
+                var userByEmail = await _unitOfWork.Users.GetByEmailAsync(
+                    request.Email, cancellationToken);
+ 
+                if (userByEmail is not null)
+                {
+                    if (!userByEmail.IsActive)
+                    {
+                        return FailedAuthResult(
+                            "This account has been blocked by an admin. Please contact support.");
+                    }
+
+                    await _unitOfWork.Users.AddExternalLoginAsync(
+                        userByEmail.Id, request.Provider, request.ProviderKey, cancellationToken);
+ 
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
+                    return await IssueTokensAsync(userByEmail, cancellationToken);
+                }
+            }
+ 
+            var userName = await GenerateUniqueUserNameAsync(request, cancellationToken);
+ 
+            var newUser = new User
+            {
+                Email = request.Email,
+                UserName = userName
+            };
+ 
+            await _unitOfWork.Users.CreateUserWithExternalLoginAsync(
+                newUser, request.Provider, request.ProviderKey, request.Name, cancellationToken);
+ 
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+ 
+            return await IssueTokensAsync(newUser, cancellationToken);
+        }
+
+        private async Task<string> GenerateUniqueUserNameAsync(
+                ExternalLoginRequestDto request,
+                CancellationToken cancellationToken)
+            {
+                var baseName = BuildBaseUserName(request);
+ 
+                var candidate = baseName;
+                for (var attempt = 0; attempt < MaxUserNameAttempts; attempt++)
+                {
+                    var exists = await _unitOfWork.Users.ExistsByUserNameAsync(candidate, cancellationToken);
+                    if (!exists)
+                        return candidate;
+ 
+                    candidate = $"{baseName}{Random.Shared.Next(1000, 9999)}";
+                }
+ 
+                return $"{baseName}{Guid.NewGuid():N}"[..Math.Min(baseName.Length + 8, 32)];
+            }
+ 
+            private static string BuildBaseUserName(ExternalLoginRequestDto request)
+            {
+                var source = !string.IsNullOrWhiteSpace(request.Email)
+                    ? request.Email.Split('@')[0]
+                    : !string.IsNullOrWhiteSpace(request.Name)
+                        ? request.Name
+                        : $"{request.Provider}user";
+                
+                var cleaned = new string(source.Where(char.IsLetterOrDigit).ToArray());
+                return string.IsNullOrEmpty(cleaned) ? "user" : cleaned.ToLowerInvariant();
+            }
+
+        public async Task<AuthResultDto> AddPhoneNumberAsync(
+            int userId,
+            string phoneNumber,
+            CancellationToken cancellationToken = default)
+        {
+            var user = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
+            if (user is null)
+            {
+                return FailedAuthResult("User account not found.");
+            }
+
+            if (await _unitOfWork.Users.ExistsByPhoneNumberAsync(phoneNumber, cancellationToken))
+            {
+                return FailedAuthResult("An account with this phone number already exists.");
+            }
+
+            user.PhoneNumber = phoneNumber;
+            user.IsPhoneVerified = false;
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            await _otpService.GenerateAndSendAsync(
+                user.Id,
+                user.PhoneNumber,
+                OtpPurpose.PhoneVerification,
+                cancellationToken);
+
+            return new AuthResultDto
+            {
+                IsSuccess = true,
+                Message = "Phone number updated. We sent a verification code to your phone."
+            };
+        }
+
+        public async Task<AuthResultDto> ForgotPasswordAsync(
+            ForgotPasswordRequestDto request,
+            CancellationToken cancellationToken = default)
+        {
+            const string genericMessage =
+                "If an account with that email exists and has a phone number on file, " +
+                "we've sent a verification code to it.";
+
+            var user = await _unitOfWork.Users.GetByEmailAsync(
+                request.Email, cancellationToken);
+
+            if (user is not null && user.IsActive && !string.IsNullOrWhiteSpace(user.PhoneNumber))
+            {
+                await _otpService.GenerateAndSendAsync(
+                    user.Id,
+                    user.PhoneNumber,
+                    OtpPurpose.PasswordReset,
+                    cancellationToken);
+
+                await _auditLogService.LogAsync(
+                    user.Id,
+                    "ForgotPasswordRequested",
+                    "User",
+                    user.Id,
+                    "A password reset code was requested.",
+                    cancellationToken);
+            }
+
+            return new AuthResultDto
+            {
+                IsSuccess = true,
+                Message = genericMessage
+            };
+        }
+
+        public async Task<AuthResultDto> ResetPasswordAsync(
+            ResetPasswordRequestDto request,
+            CancellationToken cancellationToken = default)
+        {
+            var user = await _unitOfWork.Users.GetByEmailAsync(
+                request.Email, cancellationToken);
+
+            const string genericFailure =
+                "That code is invalid or expired. Please request a new one.";
+
+            if (user is null)
+            {
+                return FailedAuthResult(genericFailure);
+            }
+
+            var isValid = await _otpService.VerifyAsync(
+                user.Id,
+                request.Code,
+                OtpPurpose.PasswordReset,
+                cancellationToken);
+
+            if (!isValid)
+            {
+                return FailedAuthResult(genericFailure);
+            }
+
+            user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            await _auditLogService.LogAsync(
+                user.Id,
+                "PasswordReset",
+                "User",
+                user.Id,
+                "Password was reset via the forgot-password flow.",
+                cancellationToken);
+
+            return new AuthResultDto
+            {
+                IsSuccess = true,
+                Message = "Your password has been reset. You can now log in."
+            };
+        }
     }
 }
+

@@ -1,4 +1,45 @@
-﻿<!DOCTYPE html>
+@using QuickPay.DAL.UnitOfWork
+@using System.Security.Claims
+@using System.IdentityModel.Tokens.Jwt
+@inject IUnitOfWork UnitOfWork
+@inject QuickPay.BLL.Services.Interfaces.ICurrentUserService CurrentUserService
+
+@{
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    bool needsPhone = false;
+    if (isAuthenticated)
+    {
+        var subClaim = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                    ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (int.TryParse(subClaim, out var currentUserId))
+        {
+            var userEntity = await UnitOfWork.Users.GetByIdAsync(currentUserId);
+            if (userEntity != null && (string.IsNullOrWhiteSpace(userEntity.PhoneNumber) || !userEntity.IsPhoneVerified))
+            {
+                needsPhone = true;
+            }
+        }
+    }
+}
+@{
+    bool isAdmin = false;
+    string? currentUserName = null;
+    string? currentUserImage = null;
+
+    if (User.Identity?.IsAuthenticated == true)
+    {
+        var currentUserId = CurrentUserService.GetCurrentUserId();
+        var currentUser = await UnitOfWork.Users.GetByIdAsync(currentUserId);
+        isAdmin = currentUser?.IsAdmin ?? false;
+        currentUserName = currentUser?.UserName;
+        currentUserImage = currentUser?.ProfilePhotoUrl;
+    }
+
+    string currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    bool IsActive(params string[] controllers) => controllers.Contains(currentController, StringComparer.OrdinalIgnoreCase);
+}
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -10,55 +51,206 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/design-system.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/animations.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/QuickPay.PL.styles.css" asp-append-version="true" />
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark mb-4">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">QuickPay</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Wallet" asp-action="Index">Wallets</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Transfer" asp-action="Index">Transfer</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="TransactionHistory" asp-action="Index">History</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Notifications" asp-action="Index">Notifications</a>
-                        </li>
-                    </ul>
-                    <ul class="navbar-nav">
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Auth" asp-action="Login">Log in</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
+@{
+    var bodyClass = isAuthenticated ? "qp-app" : "";
+}
 
-    <footer class="border-top footer text-muted">
-        <div class="container py-3">
-            &copy; 2026 - QuickPay
+<body class="@bodyClass">
+
+    @if (isAuthenticated)
+    {
+        <div class="qp-sidebar-backdrop" data-qp-sidebar-backdrop></div>
+        <aside class="qp-sidebar">
+            <a class="qp-sidebar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                <img src="~/img/logo.png" style="width:200px;" class="sidebar-logo"/>
+            </a>
+            <ul class="qp-sidebar-nav">
+                <li>
+                    <a class="qp-sidebar-link @(IsActive("Home") ? "active" : "")" asp-area="" asp-controller="Home" asp-action="Index">
+                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4.5a.5.5 0 0 0 .5-.5v-4h2v4a.5.5 0 0 0 .5.5H14a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.793l-2.646-2.647z" />
+                        </svg>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+
+                <div class="qp-sidebar-section-label">Wallets</div>
+                <li>
+                    <a class="qp-sidebar-link @(IsActive("Wallet") ? "active" : "")" asp-area="" asp-controller="Wallet" asp-action="Index">
+                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V4Zm1 0v1h14V4H1Zm14 2H1v5h14V6ZM2 9.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Z" />
+                        </svg>
+                        <span>My Wallets</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="qp-sidebar-link @(IsActive("SharedWallet") ? "active" : "")" asp-area="" asp-controller="SharedWallet" asp-action="Index">
+                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1h8Zm-7.978-1A.261.261 0 0 1 7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002a.274.274 0 0 1-.014.002H7.022ZM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM6.936 9.28a5.88 5.88 0 0 0-1.23-.247A7.35 7.35 0 0 0 5 9c-4 0-5 3-5 4q0 1 1 1h4.216A2.238 2.238 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816ZM4.92 10A5.5 5.5 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275ZM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0Zm3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" />
+                        </svg>
+                        <span>Shared Wallets</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="qp-sidebar-link @(IsActive("LinkedAccounts") ? "active" : "")" asp-area="" asp-controller="LinkedAccounts" asp-action="Index">
+                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9c-.086 0-.17.01-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z" />
+                            <path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4.02 4.02 0 0 1-.82 1H12a3 3 0 1 0 0-6H9z" />
+                        </svg>
+                        <span>Linked Accounts</span>
+                    </a>
+                </li>
+                <div class="qp-sidebar-section-label">Payments</div>
+                <li>
+                    <a class="qp-sidebar-link @(IsActive("Transfer") ? "active" : "")" asp-area="" asp-controller="Transfer" asp-action="Index">
+                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z" />
+                        </svg>
+                        <span>Transfer</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="qp-sidebar-link @(IsActive("SmartSplit") ? "active" : "")" asp-area="" asp-controller="SmartSplit" asp-action="Index">
+                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M2 2a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h5.5a.5.5 0 0 0 0-1H2a1 1 0 0 1-1-1V6h14v1.5a.5.5 0 0 0 1 0V4a2 2 0 0 0-2-2H2Zm13 2H1V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v1z" />
+                            <path d="M14.354 9.146a.5.5 0 0 0-.708 0l-1.5 1.5a.5.5 0 0 0 .708.708L13.5 10.707V13.5a.5.5 0 0 0 1 0v-2.793l.646.647a.5.5 0 0 0 .708-.708l-1.5-1.5Zm-3.708 4a.5.5 0 0 1 0-.708l1.5-1.5a.5.5 0 1 1 .708.708L11.707 12.5H14.5a.5.5 0 0 1 0 1h-2.793l1.147 1.146a.5.5 0 0 1-.708.708l-1.5-1.5Z" />
+                        </svg>
+                        <span>Smart Split</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="qp-sidebar-link @(IsActive("TransactionHistory") ? "active" : "")" asp-area="" asp-controller="TransactionHistory" asp-action="Index">
+                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022l-.074.997zm2.004.45a7.003 7.003 0 0 0-.985-.299l.219-.976c.383.086.76.2 1.126.342l-.36.933zm1.37.71a7.01 7.01 0 0 0-.439-.27l.493-.87a8.025 8.025 0 0 1 .979.654l-.615.789a6.996 6.996 0 0 0-.418-.302zm1.834 1.79a6.99 6.99 0 0 0-.653-.796l.724-.69c.27.285.52.59.747.91l-.818.576zm.744 1.352a7.08 7.08 0 0 0-.214-.468l.893-.45a7.976 7.976 0 0 1 .45 1.088l-.95.313a7.023 7.023 0 0 0-.179-.483zm.53 2.507a6.991 6.991 0 0 0-.1-1.025l.985-.17c.067.386.106.778.116 1.17l-1 .025zm-.131 1.538c.033-.17.06-.339.081-.51l.993.123a7.957 7.957 0 0 1-.23 1.155l-.964-.267c.046-.165.086-.332.12-.501zm-.952 2.379c.184-.29.346-.594.486-.908l.914.405c-.16.36-.345.706-.555 1.038l-.845-.535zm-.964 1.205c.122-.122.239-.248.35-.378l.758.653a8.073 8.073 0 0 1-.401.432l-.707-.707z" />
+                            <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0v1z" />
+                            <path d="M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5z" />
+                        </svg>
+                        <span>Transaction History</span>
+                    </a>
+                </li>
+
+                @if (isAdmin)
+                {
+                    <div class="qp-sidebar-section-label">Admin</div>
+                    <li>
+                        <a class="qp-sidebar-link @(IsActive("Admin") ? "active" : "")" asp-controller="Admin" asp-action="Index">
+                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zM8 4a1 1 0 0 1 1 1v3.586l2.707 2.707a1 1 0 0 1-1.414 1.414L7 9.414V5a1 1 0 0 1 1-1z" />
+                            </svg>
+                            <span>Admin Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="qp-sidebar-link @(IsActive("AuditLog") ? "active" : "")" asp-controller="AuditLog" asp-action="Index">
+                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V4Zm1 0v1h14V4H1Zm14 2H1v5h14V6ZM2 9.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Z" />
+                            </svg>
+                            <span>Audit Log</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+
+            <div class="qp-sidebar-footer dropdown">
+                <a class="d-flex align-items-center gap-2 text-decoration-none dropdown-toggle" href="#" id="userMenuDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="color: var(--qp-sidebar-text-active);">
+                    <img class="qp-avatar" src="@currentUserImage" alt="@((currentUserName ?? "?").Substring(0, 1).ToUpper())" />
+                    <span class="qp-sidebar-brand-text small ms-3">@(currentUserName ?? "Account")</span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenuDropdown">
+                    <li><h6 class="dropdown-header">Signed in as @currentUserName</h6></li>
+                    <li><a class="dropdown-item" asp-controller="Profile" asp-action="Index">My Profile</a></li>
+                    <li><hr class="dropdown-divider" /></li>
+                    <li>
+                        <form asp-action="Logout" asp-controller="Auth" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="dropdown-item qp-logout-btn">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                                    <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z" />
+                                    <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z" />
+                                </svg>
+                                Log Out
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </aside>
+
+        <div class="qp-main-col">
+            <header class="qp-topbar qp-glass">
+                <button type="button" class="qp-topbar-toggle" data-qp-sidebar-toggle aria-label="Toggle navigation">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z" />
+                    </svg>
+                </button>
+                <div class="qp-topbar-actions">
+                    <a class="qp-notif-btn" asp-area="" asp-controller="Notifications" asp-action="Index" aria-label="Notifications">
+                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zM8 1.918l-.797.161A4.002 4.002 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4.002 4.002 0 0 0-3.203-3.92L8 1.917zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 9.073 3 8c0-2.754 1.781-5.05 4.258-5.74A2 2 0 1 1 9.742 2.26C12.219 2.95 14 5.246 14 8c0 1.073.32 2.2 1.22 4z" />
+                        </svg>
+                        <span class="qp-notif-dot"></span>
+                    </a>
+                </div>
+            </header>
+
+            @if (needsPhone)
+            {
+                <div class="px-3 pt-3">
+                    <div class="alert alert-warning d-flex align-items-center justify-content-between shadow-sm mb-0" role="alert">
+                        <div>
+                            <strong>Action Required:</strong> Your account does not have a verified phone number. Please add your phone number to secure your account.
+                        </div>
+                        <a asp-controller="Auth" asp-action="AddPhoneNumber" class="btn btn-warning btn-sm ms-3 text-nowrap">
+                            Add Phone Number
+                        </a>
+                    </div>
+                </div>
+            }
+            <main role="main" class="qp-content qp-page-enter">
+                @RenderBody()
+            </main>
+
+            <footer class="border-top footer text-muted">
+                <div class="px-4 py-3">
+                    &copy; 2026 - QuickPay
+                </div>
+            </footer>
         </div>
-    </footer>
+    }
+    else
+    {
+        <div class="qp-main-col">
+            <header>
+                <nav class="navbar navbar-expand-sm navbar-dark mb-4">
+                    <div class="container-fluid px-4">
+                        <a class="navbar-brand d-flex align-items-center gap-2" asp-area="" asp-controller="Home" asp-action="Index">
+                            <span class="qp-sidebar-brand-icon"></span>
+                            QuickPay
+                        </a>
+                    </div>
+                </nav>
+            </header>
+            <main role="main" class="container qp-page-enter">
+                @RenderBody()
+            </main>
+            <footer class="border-top footer text-muted">
+                <div class="container py-3">
+                    &copy; 2026 - QuickPay
+                </div>
+            </footer>
+        </div>
+    }
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/ui.js" asp-append-version="true"></script>
+    <script src="~/js/animations.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

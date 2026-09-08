@@ -1,0 +1,343 @@
+﻿@using QuickPay.BLL.DTOs
+@model IEnumerable<AuditLogDto>
+
+@{
+    ViewData["Title"] = "Audit Log";
+}
+
+<div class="container py-4">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h1 class="qp-dashboard-title mb-1">Audit Log</h1>
+            <p class="text-muted mb-0">Every admin action across the system, in one place.</p>
+        </div>
+        <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-secondary">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z" />
+            </svg>
+            Back to Admin Dashboard
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-header bg-transparent border-bottom py-3">
+            <h5 class="mb-0">
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                    <path d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5v-2z" />
+                </svg>
+                Filters
+            </h5>
+        </div>
+        <div class="card-body p-4">
+
+            <div class="row g-3 align-items-end">
+
+                <!-- Filter By -->
+                <div class="col-md-3">
+                    <label class="form-label">Filter By</label>
+
+                    <select id="filterBy" class="form-select">
+                        <option value="">All Logs</option>
+                        <option value="action">Action</option>
+                        <option value="entity">Target</option>
+                        <option value="user">User</option>
+                        <option value="date">Date</option>
+                    </select>
+                </div>
+
+                <!-- Dynamic Filter -->
+                <div class="col-md-6" id="filterContainer">
+
+                    <!-- Action -->
+                    <div id="actionFilter" class="filter-option d-none">
+                        <label class="form-label">Action</label>
+
+                        <input type="text"
+                               id="action"
+                               class="form-control"
+                               placeholder="e.g. Delete, Verify, Update..." />
+                    </div>
+
+                    <!-- Entity Affected -->
+                    <div id="entityFilter" class="filter-option d-none">
+                        <label class="form-label">Target</label>
+
+                        <input type="text"
+                               id="entity"
+                               class="form-control"
+                               placeholder="e.g. User, Wallet, SharedWallet..." />
+                    </div>
+
+                    <!-- User -->
+                    <div id="userFilter" class="filter-option d-none">
+                        <label class="form-label">User</label>
+
+                        <input type="text"
+                               id="user"
+                               class="form-control"
+                               placeholder="Search by username..." />
+                    </div>
+
+                    <!-- Date -->
+                    <div id="dateFilter" class="filter-option d-none">
+                        <label class="form-label">Date</label>
+
+                        <div class="d-flex gap-2">
+                            <input type="date" id="fromDate" class="form-control" />
+                            <input type="date" id="toDate" class="form-control" />
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Clear -->
+                <div class="col-md-3">
+                    <button type="button" id="clearFilter" class="btn btn-outline-secondary w-100">
+                        Clear Filter
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Logs -->
+    <div class="card">
+        <div class="card-header bg-transparent border-bottom py-3">
+            <h5 class="mb-0">
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                    <path d="M0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V4Zm1 0v1h14V4H1Zm14 2H1v5h14V6ZM2 9.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Z" />
+                </svg>
+                Activity
+            </h5>
+        </div>
+        <div class="card-body p-0">
+
+            @if (Model == null || !Model.Any())
+            {
+                <div class="text-center py-5" id="emptyState">
+                    <div class="qp-empty-icon mb-3">
+                        <svg width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V4Zm1 0v1h14V4H1Zm14 2H1v5h14V6ZM2 9.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Z" />
+                        </svg>
+                    </div>
+                    <p class="text-muted mb-0 fw-semibold">No audit log entries yet</p>
+                    <p class="text-muted small">Admin actions across the system will show up here once they happen.</p>
+                </div>
+            }
+            else
+            {
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Target</th>
+                            <th>Details</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in Model)
+                        {
+                            var actionLower = log.Action.ToLower();
+
+                            var badgeClass = actionLower switch
+                            {
+                                var a when a.Contains("delete") || a.Contains("remove") || a.Contains("reject") || a.Contains("ban") => "bg-danger",
+                                var a when a.Contains("create") || a.Contains("add") || a.Contains("verify") || a.Contains("approve") => "bg-success",
+                                var a when a.Contains("update") || a.Contains("edit") || a.Contains("change") => "bg-warning",
+                                _ => "bg-secondary"
+                            };
+
+                            <tr>
+                                <td class="fw-semibold">@log.UserName</td>
+                                <td><span class="badge @badgeClass">@log.Action</span></td>
+                                <td>
+                                    @log.EntityAffected
+                                    @if (log.AffectedEntityId.HasValue)
+                                    {
+                                        <span class="text-muted small">#@log.AffectedEntityId</span>
+                                    }
+                                </td>
+                                <td class="text-muted small">@(string.IsNullOrWhiteSpace(log.Details) ? "—" : log.Details)</td>
+                                <td class="text-muted small text-nowrap">@log.CreatedAt.ToString("MMM d, yyyy · h:mm tt")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+
+    const filterBy = document.getElementById("filterBy");
+
+    const actionFilter = document.getElementById("actionFilter");
+    const entityFilter = document.getElementById("entityFilter");
+    const userFilter = document.getElementById("userFilter");
+    const dateFilter = document.getElementById("dateFilter");
+
+    const actionInput = document.getElementById("action");
+    const entityInput = document.getElementById("entity");
+    const userInput = document.getElementById("user");
+    const fromDate = document.getElementById("fromDate");
+    const toDate = document.getElementById("toDate");
+
+    const clearFilter = document.getElementById("clearFilter");
+
+    filterBy.addEventListener("change", function() {
+
+        actionFilter.classList.add("d-none");
+        entityFilter.classList.add("d-none");
+        userFilter.classList.add("d-none");
+        dateFilter.classList.add("d-none");
+
+        if (this.value === "action") {
+            actionFilter.classList.remove("d-none");
+            actionInput.focus();
+        }
+        else if (this.value === "entity") {
+            entityFilter.classList.remove("d-none");
+            entityInput.focus();
+        }
+        else if (this.value === "user") {
+            userFilter.classList.remove("d-none");
+            userInput.focus();
+        }
+        else if (this.value === "date") {
+            dateFilter.classList.remove("d-none");
+        }
+        else {
+            loadLogs("", "");
+        }
+
+    });
+
+    actionInput.addEventListener("input", function() {
+        loadLogs("action", this.value);
+    });
+
+    entityInput.addEventListener("input", function() {
+        loadLogs("entity", this.value);
+    });
+
+    userInput.addEventListener("input", function() {
+        loadLogs("user", this.value);
+    });
+
+    fromDate.addEventListener("change", loadDateFilter);
+    toDate.addEventListener("change", loadDateFilter);
+
+    function loadDateFilter() {
+        if (fromDate.value && toDate.value) {
+            loadLogs("date", fromDate.value + "|" + toDate.value);
+        }
+    }
+
+    clearFilter.addEventListener("click", function() {
+
+        filterBy.value = "";
+        actionInput.value = "";
+        entityInput.value = "";
+        userInput.value = "";
+        fromDate.value = "";
+        toDate.value = "";
+
+        actionFilter.classList.add("d-none");
+        entityFilter.classList.add("d-none");
+        userFilter.classList.add("d-none");
+        dateFilter.classList.add("d-none");
+
+        loadLogs("", "");
+
+    });
+
+    function loadLogs(filterByValue, filterValue) {
+
+        const url =
+            `/AuditLog/Filter`
+            + `?filterBy=${encodeURIComponent(filterByValue)}`
+            + `&filterValue=${encodeURIComponent(filterValue)}`;
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Failed to load audit logs.");
+                }
+                return response.json();
+            })
+            .then(data => updateTable(data))
+            .catch(error => console.error(error));
+
+    }
+
+    function badgeClassFor(action) {
+        const a = action.toLowerCase();
+        if (a.includes("delete") || a.includes("remove") || a.includes("reject") || a.includes("ban")) return "bg-danger";
+        if (a.includes("create") || a.includes("add") || a.includes("verify") || a.includes("approve")) return "bg-success";
+        if (a.includes("update") || a.includes("edit") || a.includes("change")) return "bg-warning";
+        return "bg-secondary";
+    }
+
+    function updateTable(logs) {
+
+        const tableBody = document.querySelector("table tbody");
+        if (!tableBody) return;
+
+        tableBody.innerHTML = "";
+
+        if (!logs || logs.length === 0) {
+            tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-5">
+                                No audit log entries found.
+                            </td>
+                        </tr>
+                    `;
+            return;
+        }
+
+        logs.forEach(log => {
+
+            const badgeClass = badgeClassFor(log.action);
+
+            const date = new Date(log.createdAt).toLocaleString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+                hour: "numeric",
+                minute: "2-digit"
+            });
+
+            const affectedId = log.affectedEntityId
+                ? `<span class="text-muted small">#${log.affectedEntityId}</span>`
+                : "";
+
+            const details = log.details ? log.details : "—";
+
+            tableBody.innerHTML += `
+                        <tr>
+                            <td class="fw-semibold">${log.userName}</td>
+                            <td><span class="badge ${badgeClass}">${log.action}</span></td>
+                            <td>${log.entityAffected} ${affectedId}</td>
+                            <td class="text-muted small">${details}</td>
+                            <td class="text-muted small text-nowrap">${date}</td>
+                        </tr>
+                    `;
+
+        });
+
+    }
+
+</script>
+
+

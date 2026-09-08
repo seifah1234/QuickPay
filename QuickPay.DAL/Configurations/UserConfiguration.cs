@@ -28,12 +28,21 @@ namespace QuickPay.DAL.Configurations
 
             builder.Property(x => x.PhoneNumber)
                 .HasMaxLength(20)
-                .IsRequired();
+                .IsRequired(false);
 
             builder.HasIndex(x => x.PhoneNumber)
                 .IsUnique();
 
             builder.Property(x => x.PasswordHash)
+                .IsRequired(false);
+            
+            builder.ToTable(t => t.HasCheckConstraint(
+                    "CK_User_Password_Required_For_Local",
+                    "[IsExternalUser] = 1 OR [PasswordHash] IS NOT NULL"
+                ));
+            
+            builder.Property(x => x.IsExternalUser)
+                .HasDefaultValue(false)
                 .IsRequired();
 
             builder.Property(x => x.IsPhoneVerified)

@@ -32,16 +32,16 @@ namespace QuickPay.DAL.Repositries.Implementaion
         {
             var wallets = await _context.Set<Wallet>()
                 .Include(w => w.User)
-                .Where(w => w.IsActive && w.UserId == userId)
+                .Where(w => w.UserId == userId && w.IsActive)
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
             var sharedWallets = await _context.Set<SharedWallet>()
-                .Where(sw =>
-                    sw.IsActive &&
-                    (sw.Members.Any(m => m.UserId == userId)))
-                .AsNoTracking()
-                .ToListAsync(cancellationToken);
+        .Include(sw => sw.Members)
+            .ThenInclude(m => m.User)
+        .Where(sw => sw.IsActive && sw.Members.Any(m => m.UserId == userId))
+        .AsNoTracking()
+        .ToListAsync(cancellationToken);
 
             var result = wallets
                 .Cast<FinancialAccount>()
@@ -110,6 +110,11 @@ namespace QuickPay.DAL.Repositries.Implementaion
                     cancellationToken);
 
             return isSharedWalletOwnerOrMember;
+        }
+
+        public Task<IEnumerable<FinancialAccount>> GetAllAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(_context.FinancialAccounts.AsEnumerable());
         }
     }
 }

@@ -1,42 +1,184 @@
-﻿@{
-    ViewData["Title"] = "QuickPay";
+﻿@using QuickPay.BLL.ViewModels
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
 }
 
-<div class="qp-hero">
-    <div class="qp-eyebrow">Money, moved simply</div>
-    <h1>Send, hold, and track your money in one place</h1>
-    <p class="lead">
-        QuickPay keeps your wallets, transfers, and transaction history in a single
-        clear ledger &mdash; so you always know where your money stands.
-    </p>
-    <div class="d-flex justify-content-center gap-3 flex-wrap">
-        <a asp-controller="Auth" asp-action="Register" class="btn btn-primary btn-lg px-4">Create an account</a>
-        <a asp-controller="Wallet" asp-action="Index" class="btn btn-outline-secondary btn-lg px-4">View my wallets</a>
+<!-- Dashboard Header -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h1 class="qp-dashboard-title mb-1">Dashboard</h1>
+        <p class="text-muted mb-0">Welcome back! Here's your financial overview.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="Transfer" asp-action="Index" class="btn btn-primary">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z" />
+            </svg>
+            New Transfer
+        </a>
+        <a asp-controller="Wallet" asp-action="Index" class="btn btn-outline-secondary">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-2">
+                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+            </svg>
+            Add Wallet
+        </a>
     </div>
 </div>
 
-<div class="row justify-content-center g-4 mt-2 mb-5">
+<!-- Stats Cards -->
+<div class="row g-3 mb-4">
     <div class="col-md-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-body p-4">
-                <h5>Wallets</h5>
-                <p class="text-muted mb-0">Create Money Spaces, deposit, withdraw, and rename them any time.</p>
+        <div class="card qp-stat-card qp-stat-card-primary h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="qp-stat-icon">
+                        <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M0 4a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V4Zm1 0v1h14V4H1Zm14 2H1v5h14V6ZM2 9.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Z" />
+                        </svg>
+                    </div>
+                    <span class="badge bg-success">Active</span>
+                </div>
+                <h3 class="qp-stat-value">@Model.TotalBalance.ToString("N2") EGP</h3>
+                <p class="qp-stat-label mb-0">Total Balance</p>
             </div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-body p-4">
-                <h5>Transfers</h5>
-                <p class="text-muted mb-0">Send money by username, phone number, or shared wallet, instantly.</p>
+        <div class="card qp-stat-card qp-stat-card-success h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="qp-stat-icon">
+                        <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1h8Zm-7.978-1A.261.261 0 0 1 7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002a.274.274 0 0 1-.014.002H7.022ZM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM6.936 9.28a5.88 5.88 0 0 0-1.23-.247A7.35 7.35 0 0 0 5 9c-4 0-5 3-5 4 0 .667.333 1 1 1h4.216A2.238 2.238 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816ZM4.92 10A5.493 5.493 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275ZM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0Zm3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" />
+                        </svg>
+                    </div>
+                    <span class="badge bg-primary">@Model.ActiveAccountsCount Active</span>
+                </div>
+                <h3 class="qp-stat-value">@Model.TotalAccountsCount</h3>
+                <p class="qp-stat-label mb-0">Total Accounts</p>
             </div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-body p-4">
-                <h5>History</h5>
-                <p class="text-muted mb-0">Every transaction logged in a clear, precise ledger you can page through.</p>
+        <div class="card qp-stat-card qp-stat-card-warning h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="qp-stat-icon">
+                        <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zM8 1.918l-.797.161A4.002 4.002 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4.002 4.002 0 0 0-3.203-3.92L8 1.917zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 9.073 3 8c0-2.754 1.781-5.05 4.258-5.74A2 2 0 1 1 9.742 2.26C12.219 2.95 14 5.246 14 8c0 1.073.32 2.2 1.22 4z" />
+                        </svg>
+                    </div>
+                    <span class="badge bg-warning text-dark">Live</span>
+                </div>
+                <h3 class="qp-stat-value">@Model.RecentTransactions.Count()</h3>
+                <p class="qp-stat-label mb-0">Recent Transactions</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Accounts & Transactions -->
+<div class="row g-4">
+    <!-- Accounts List -->
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0">My Accounts</h5>
+                <a asp-controller="Wallet" asp-action="Index" class="text-decoration-none small">View All</a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.Accounts.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var account in Model.Accounts.Take(5))
+                        {
+                            <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                <div>
+                                    <div class="fw-semibold">@account.DisplayName</div>
+                                    <small class="text-muted">@account.Currency</small>
+                                </div>
+                                <div class="text-end">
+                                    <div class="amount">@account.Balance.ToString("N2")</div>
+                                    @if (account.IsActive)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <p class="text-muted mb-3">No accounts yet</p>
+                        <a asp-controller="Wallet" asp-action="Create" class="btn btn-primary btn-sm">Create Wallet</a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0">Recent Transactions</h5>
+                <a asp-controller="TransactionHistory" asp-action="Index" class="text-decoration-none small">View All</a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.RecentTransactions.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Direction</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var transaction in Model.RecentTransactions)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-light text-dark">@transaction.Type</span>
+                                        </td>
+                                        <td class="amount @(transaction.Direction == "Incoming" ? "amount-in" : "amount-out")">
+                                            @(transaction.Direction == "Incoming" ? "+" : "-")@transaction.Amount.ToString("N2")
+                                        </td>
+                                        <td>
+                                            <span class="badge @(transaction.Status == "Completed" ? "bg-success" : "bg-warning text-dark")">
+                                                @transaction.Status
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge @(transaction.Direction == "Incoming" ? "bg-success" : "bg-danger")">
+                                                @transaction.Direction
+                                            </span>
+                                        </td>
+                                        <td class="text-muted">@transaction.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <p class="text-muted mb-3">No transactions yet</p>
+                        <a asp-controller="Transfer" asp-action="Index" class="btn btn-primary btn-sm">Make Transfer</a>
+                    </div>
+                }
             </div>
         </div>
     </div>

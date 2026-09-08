@@ -13,10 +13,17 @@ namespace QuickPay.BLL.Services.Implementation
     public class TransferService : ITransferService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly INotificationService _notificationService;
+        private readonly IAuditLogService _auditLogService;
 
-        public TransferService(IUnitOfWork unitOfWork)
+        public TransferService(
+            IUnitOfWork unitOfWork,
+            INotificationService notificationService,
+            IAuditLogService auditLogService)
         {
             _unitOfWork = unitOfWork;
+            _notificationService = notificationService;
+            _auditLogService = auditLogService;
         }
 
         public async Task<TransferResultDto> TransferAsync(
@@ -125,7 +132,36 @@ namespace QuickPay.BLL.Services.Implementation
                 }
 
                 await _unitOfWork.CommitTransactionAsync(
+      cancellationToken);
+
+                var toOwnerName = await GetOwnerNameAsync(
+                    toAccount, cancellationToken);
+
+                await _notificationService.NotifyAsync(
+                    request.CurrentUserId,
+                    "TransferSent",
+                    $"You sent {request.Amount} EGP to {toOwnerName}.",
                     cancellationToken);
+
+                await _auditLogService.LogAsync(
+                    request.CurrentUserId,
+                    "Transfer",
+                    "Transaction",
+                    transaction.Id,
+                    $"Transferred {request.Amount} EGP from account #{request.FromAccountId} to account #{request.ToAccountId}.",
+                    cancellationToken);
+
+                if (toAccount is Wallet toWallet)
+                {
+                    var fromOwnerName = await GetOwnerNameAsync(
+                        fromAccount, cancellationToken);
+
+                    await _notificationService.NotifyAsync(
+                        toWallet.UserId,
+                        "TransferReceived",
+                        $"You received {request.Amount} EGP from {fromOwnerName}.",
+                        cancellationToken);
+                }
 
                 return new TransferResultDto
                 {
@@ -146,6 +182,25 @@ namespace QuickPay.BLL.Services.Implementation
 
                 throw;
             }
+        }
+        private async Task<string> GetOwnerNameAsync(
+            FinancialAccount account,
+            CancellationToken cancellationToken)
+        {
+            if (account is Wallet wallet)
+            {
+                var owner = await _unitOfWork.Users.GetByIdAsync(
+                    wallet.UserId, cancellationToken);
+
+                return owner?.UserName ?? $"User #{wallet.UserId}";
+            }
+
+            if (account is SharedWallet sharedWallet)
+            {
+                return sharedWallet.Name;
+            }
+
+            return $"Account #{account.Id}";
         }
     }
 }

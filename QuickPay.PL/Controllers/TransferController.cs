@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuickPay.BLL.DTOs;
 using QuickPay.BLL.Services.Interfaces;
 using QuickPay.BLL.ViewModels;
 
+[Authorize]
 public class TransferController : Controller
 {
     private readonly ITransferService _transferService;

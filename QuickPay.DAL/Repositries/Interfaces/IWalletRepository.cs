@@ -17,5 +17,9 @@ namespace QuickPay.DAL.Repositries.Interfaces
             CancellationToken cancellationToken = default);
 
         void Remove(Wallet wallet);
+        Task<List<Wallet>?> GetAllAsync(
+            int pageNumber = 1,
+            int pageSize = 100,
+            CancellationToken cancellationToken = default);
     }
 }

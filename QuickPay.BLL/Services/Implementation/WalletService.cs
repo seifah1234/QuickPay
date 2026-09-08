@@ -10,10 +10,17 @@ namespace QuickPay.BLL.Services.Implementation
     public class WalletService : IWalletService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly INotificationService _notificationService;
+        private readonly IAuditLogService _auditLogService;
 
-        public WalletService(IUnitOfWork unitOfWork)
+        public WalletService(
+            IUnitOfWork unitOfWork,
+            INotificationService notificationService,
+            IAuditLogService auditLogService)
         {
             _unitOfWork = unitOfWork;
+            _notificationService = notificationService;
+            _auditLogService = auditLogService;
         }
 
         public async Task<IEnumerable<WalletDto>> GetMyWalletsAsync(
@@ -47,6 +54,11 @@ namespace QuickPay.BLL.Services.Implementation
 
             await _unitOfWork.Wallets.AddAsync(wallet, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _notificationService.NotifyAsync(
+    wallet.UserId,
+    "WalletCreated",
+    $"A new wallet named \"{wallet.Name}\" has been created.",
+    cancellationToken);
 
             return ToDto(wallet);
         }
@@ -70,6 +82,11 @@ namespace QuickPay.BLL.Services.Implementation
             wallet.UpdatedAt = DateTime.UtcNow;
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _notificationService.NotifyAsync(
+    wallet.UserId,
+    "WalletRenamed",
+    $"Your wallet was renamed to \"{wallet.Name}\".",
+    cancellationToken);
 
             return ToDto(wallet);
         }
@@ -105,6 +122,19 @@ namespace QuickPay.BLL.Services.Implementation
             wallet.UpdatedAt = DateTime.UtcNow;
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _notificationService.NotifyAsync(
+    wallet.UserId,
+    "WalletDeleted",
+    $"Your wallet \"{wallet.Name}\" has been closed.",
+    cancellationToken);
+
+            await _auditLogService.LogAsync(
+                currentUserId,
+                "DeleteWallet",
+                "Wallet",
+                wallet.Id,
+                $"Wallet \"{wallet.Name}\" was closed by its owner.",
+                cancellationToken);
         }
 
         public async Task<WalletDto> DepositAsync(
@@ -186,6 +216,22 @@ namespace QuickPay.BLL.Services.Implementation
                 }
 
                 await _unitOfWork.CommitTransactionAsync(cancellationToken);
+                string action = isDeposit ? "deposited" : "withdrew";
+                string notifType = isDeposit ? "DepositSucceeded" : "WithdrawSucceeded";
+
+                await _notificationService.NotifyAsync(
+                    request.CurrentUserId,
+                    notifType,
+                    $"You {action} {request.Amount} EGP {(isDeposit ? "into" : "from")} \"{wallet.Name}\".",
+                    cancellationToken);
+
+                await _auditLogService.LogAsync(
+                    request.CurrentUserId,
+                    isDeposit ? "Deposit" : "Withdraw",
+                    "Wallet",
+                    wallet.Id,
+                    $"{(isDeposit ? "Deposited" : "Withdrew")} {request.Amount} {wallet.Currency}.",
+                    cancellationToken);
 
                 return ToDto(wallet);
             }
@@ -213,6 +259,12 @@ namespace QuickPay.BLL.Services.Implementation
             {
                 throw new UnauthorizedAccessException(
                     "You are not authorized to access this wallet.");
+            }
+
+            if (!wallet.IsActive)
+            {
+                throw new InvalidOperationException(
+                    "This wallet has been blocked or closed and can no longer be used.");
             }
 
             return wallet;

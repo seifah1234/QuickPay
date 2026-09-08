@@ -1,4 +1,4 @@
-﻿using QuickPay.BLL.DTOs.Auth;
+using QuickPay.BLL.DTOs.Auth;
 
 namespace QuickPay.BLL.Services.Interfaces
 {
@@ -22,6 +22,22 @@ namespace QuickPay.BLL.Services.Interfaces
 
         Task LogoutAsync(
             string refreshToken,
+            CancellationToken cancellationToken = default);
+        
+        Task<AuthResultDto> ExternalLoginAsync(ExternalLoginRequestDto? request,
+            CancellationToken cancellationToken = default);
+
+        Task<AuthResultDto> AddPhoneNumberAsync(
+            int userId,
+            string phoneNumber,
+            CancellationToken cancellationToken = default);
+
+        Task<AuthResultDto> ForgotPasswordAsync(
+            ForgotPasswordRequestDto request,
+            CancellationToken cancellationToken = default);
+
+        Task<AuthResultDto> ResetPasswordAsync(
+            ResetPasswordRequestDto request,
             CancellationToken cancellationToken = default);
     }
 }

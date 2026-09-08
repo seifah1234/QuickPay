@@ -1,0 +1,52 @@
+﻿@using QuickPay.BLL.DTOs.Admin
+@model IEnumerable<AdminTransactionDto>
+
+@{
+    ViewData["Title"] = "All Transactions";
+    var pageNumber = (int)(ViewBag.PageNumber ?? 1);
+}
+
+<div class="container py-5">
+
+    <h2 class="mb-4">All Transactions</h2>
+
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>From</th>
+                <th>To</th>
+                <th>Amount</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var tx in Model)
+            {
+                <tr>
+                    <td>@tx.CreatedAt.ToString("g")</td>
+                    <td>@tx.Type</td>
+                    <td>@tx.FromAccountName</td>
+                    <td>@tx.ToAccountName</td>
+                    <td>@tx.Amount.ToString("N2")</td>
+                    <td>@tx.Status</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="d-flex justify-content-between">
+        @if (pageNumber > 1)
+        {
+            <a asp-action="Transactions" asp-route-pageNumber="@(pageNumber - 1)" class="btn btn-outline-secondary">Previous</a>
+        }
+        else
+        {
+            <span></span>
+        }
+
+        <a asp-action="Transactions" asp-route-pageNumber="@(pageNumber + 1)" class="btn btn-outline-secondary">Next</a>
+    </div>
+
+</div>
